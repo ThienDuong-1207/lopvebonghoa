@@ -21,6 +21,7 @@ CREATE TYPE alert_type AS ENUM ('near_end', 'package_ended', 'inactive', 'new_re
 CREATE TABLE profiles (
   id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   auth_user_id  uuid UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  email         text UNIQUE,   -- email trang trang thai, dung de khop khi login lan dau
   full_name     text NOT NULL,
   role          user_role NOT NULL,
   phone         text,
@@ -198,9 +199,10 @@ BEGIN
   UPDATE profiles
   SET
     auth_user_id = NEW.id,
-    avatar_url = NEW.raw_user_meta_data->>'avatar_url'
+    full_name    = COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    avatar_url   = NEW.raw_user_meta_data->>'avatar_url'
   WHERE auth_user_id IS NULL
-    AND full_name = NEW.raw_user_meta_data->>'full_name'
+    AND email = NEW.email
     AND is_active = true;
   RETURN NEW;
 END;
@@ -319,14 +321,15 @@ CREATE POLICY "admin_all" ON alerts
 -- ============================================================
 -- 7. Seed data mau (chinh lai truoc khi dung)
 -- ============================================================
--- Them admin dau tien:
--- INSERT INTO profiles (full_name, role, is_active)
--- VALUES ('Ten Admin', 'admin', true);
+-- Them admin (thay full_name sau khi biet ten hien thi Google):
+-- INSERT INTO profiles (email, full_name, role, is_active)
+-- VALUES ('dctthien1201@gmail.com', 'Admin 1', 'admin', true),
+--        ('lopvebonghoa@gmail.com',  'Admin 2', 'admin', true);
 --
 -- Them staff (Huyen, Huong):
--- INSERT INTO profiles (full_name, role, is_active)
--- VALUES ('Huyền', 'staff', true),
---        ('Hương', 'staff', true);
+-- INSERT INTO profiles (email, full_name, role, is_active)
+-- VALUES ('email-huyen@gmail.com', 'Huyền', 'staff', true),
+--        ('email-huong@gmail.com', 'Hương', 'staff', true);
 --
 -- Vi du them phu huynh co 2 con:
 -- INSERT INTO parents (full_name, phone)
