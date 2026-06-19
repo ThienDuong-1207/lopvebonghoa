@@ -12,6 +12,7 @@ async function createStaff(formData: FormData) {
   'use server'
   const supabase = createClient()
   await supabase.from('profiles').insert({
+    email: formData.get('email') as string,
     full_name: formData.get('full_name') as string,
     role: 'staff',
     phone: (formData.get('phone') as string) || null,
@@ -68,7 +69,8 @@ export default async function StaffManagePage() {
                       <tr key={s.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="font-medium">{s.full_name}</div>
-                          {!s.id && <div className="text-xs text-amber-500">Chưa đăng nhập lần đầu</div>}
+                          <div className="text-xs text-gray-400">{s.email}</div>
+                          {!s.auth_user_id && <div className="text-xs text-amber-500">Chưa đăng nhập lần đầu</div>}
                         </td>
                         <td className="px-4 py-3 text-gray-600">{s.phone ?? '—'}</td>
                         <td className="px-4 py-3">
@@ -116,7 +118,11 @@ export default async function StaffManagePage() {
             <h3 className="mb-4 font-semibold">Thêm trợ giảng mới</h3>
             <form action={createStaff} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Họ tên đầy đủ *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Gmail *</label>
+                <Input name="email" type="email" required placeholder="huyen@gmail.com" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Họ tên</label>
                 <Input name="full_name" required placeholder="Nguyễn Thị Huyền" />
               </div>
               <div>
@@ -124,7 +130,7 @@ export default async function StaffManagePage() {
                 <Input name="phone" placeholder="0901234567" />
               </div>
               <p className="text-xs text-gray-400">
-                Trợ giảng sẽ tự đăng nhập bằng Google. Hệ thống sẽ liên kết tài khoản dựa trên họ tên.
+                Trợ giảng dùng Gmail này đăng nhập → hệ thống tự liên kết tài khoản.
               </p>
               <Button type="submit" className="w-full bg-[#0D2545] text-white hover:bg-[#0D2545]/90">
                 Thêm trợ giảng

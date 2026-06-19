@@ -7,6 +7,8 @@ export type AlertType = 'near_end' | 'package_ended' | 'inactive' | 'new_registr
 
 export interface Profile {
   id: string
+  auth_user_id: string | null
+  email: string | null
   full_name: string
   role: UserRole
   phone: string | null
