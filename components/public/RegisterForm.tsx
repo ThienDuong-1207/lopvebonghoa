@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { CheckCircle2 } from 'lucide-react'
 
 export default function RegisterForm() {
   const [loading, setLoading] = useState(false)
@@ -32,10 +33,12 @@ export default function RegisterForm() {
 
   if (success) {
     return (
-      <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-        <div className="text-4xl">🎉</div>
-        <h3 className="mt-4 text-xl font-bold text-[#0D2545]">Đăng ký thành công!</h3>
-        <p className="mt-2 text-gray-500">
+      <div className="rounded-2xl bg-white p-10 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
+          <CheckCircle2 className="h-7 w-7 text-green-500" />
+        </div>
+        <h3 className="text-xl font-bold text-[#0D2545]">Đăng ký thành công!</h3>
+        <p className="mt-2 text-sm text-gray-500">
           Chúng tôi sẽ liên hệ với bạn qua Zalo trong vòng 24 giờ.
         </p>
       </div>
