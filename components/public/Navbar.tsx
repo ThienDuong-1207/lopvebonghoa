@@ -9,10 +9,10 @@ export default function Navbar() {
           Lớp Vẽ Sáng Tạo
         </Link>
         <div className="flex items-center gap-6">
-          <Link href="/gallery" className="hidden text-sm text-gray-600 hover:text-[#0D2545] sm:block">
+          <Link href="/gallery" className="hidden text-sm font-medium text-gray-900 hover:text-[#0D2545] sm:block">
             Gallery
           </Link>
-          <Link href="/about" className="hidden text-sm text-gray-600 hover:text-[#0D2545] sm:block">
+          <Link href="/about" className="hidden text-sm font-medium text-gray-900 hover:text-[#0D2545] sm:block">
             Về chúng tôi
           </Link>
           <Link href="#dang-ky">
