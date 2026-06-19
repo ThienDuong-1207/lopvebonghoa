@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role, is_active')
-          .eq('id', user.id)
+          .eq('auth_user_id', user.id)
           .single()
 
         if (profile && profile.is_active) {

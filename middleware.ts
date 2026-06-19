@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, is_active')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single()
 
   // Profile not found or inactive → unauthorized

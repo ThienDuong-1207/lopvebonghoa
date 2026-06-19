@@ -17,15 +17,16 @@ CREATE TYPE alert_type AS ENUM ('near_end', 'package_ended', 'inactive', 'new_re
 
 -- 3. Tables
 
--- profiles (lien ket voi auth.users)
+-- profiles (id rieng, auth_user_id lien ket voi auth.users sau khi dang nhap)
 CREATE TABLE profiles (
-  id          uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name   text NOT NULL,
-  role        user_role NOT NULL,
-  phone       text,
-  avatar_url  text,
-  is_active   boolean NOT NULL DEFAULT true,
-  created_at  timestamptz NOT NULL DEFAULT now()
+  id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  auth_user_id  uuid UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name     text NOT NULL,
+  role          user_role NOT NULL,
+  phone         text,
+  avatar_url    text,
+  is_active     boolean NOT NULL DEFAULT true,
+  created_at    timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
@@ -196,10 +197,11 @@ RETURNS TRIGGER AS $$
 BEGIN
   UPDATE profiles
   SET
-    id = NEW.id,
+    auth_user_id = NEW.id,
     avatar_url = NEW.raw_user_meta_data->>'avatar_url'
-  WHERE id IS NULL
-    AND full_name = NEW.raw_user_meta_data->>'full_name';
+  WHERE auth_user_id IS NULL
+    AND full_name = NEW.raw_user_meta_data->>'full_name'
+    AND is_active = true;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -215,7 +217,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_handle_new_user();
 -- Helper function lay role hien tai
 CREATE OR REPLACE FUNCTION auth_role()
 RETURNS text AS $$
-  SELECT role::text FROM profiles WHERE id = auth.uid();
+  SELECT role::text FROM profiles WHERE auth_user_id = auth.uid();
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- profiles
@@ -225,7 +227,7 @@ CREATE POLICY "admin_all" ON profiles
 
 CREATE POLICY "staff_self" ON profiles
   FOR SELECT TO authenticated
-  USING (id = auth.uid());
+  USING (auth_user_id = auth.uid());
 
 -- parents
 CREATE POLICY "admin_all" ON parents
@@ -237,7 +239,9 @@ CREATE POLICY "staff_read_own_slot_parents" ON parents
     auth_role() = 'staff' AND
     id IN (
       SELECT parent_id FROM students WHERE preferred_slot_id IN (
-        SELECT id FROM slots WHERE assigned_staff_id = auth.uid()
+        SELECT id FROM slots WHERE assigned_staff_id IN (
+          SELECT id FROM profiles WHERE auth_user_id = auth.uid()
+        )
       )
     )
   );
@@ -251,7 +255,9 @@ CREATE POLICY "staff_read_own_slot" ON students
   USING (
     auth_role() = 'staff' AND
     preferred_slot_id IN (
-      SELECT id FROM slots WHERE assigned_staff_id = auth.uid()
+      SELECT id FROM slots WHERE assigned_staff_id IN (
+        SELECT id FROM profiles WHERE auth_user_id = auth.uid()
+      )
     )
   );
 
@@ -261,7 +267,10 @@ CREATE POLICY "admin_all" ON slots
 
 CREATE POLICY "staff_read_own" ON slots
   FOR SELECT TO authenticated
-  USING (auth_role() = 'staff' AND assigned_staff_id = auth.uid());
+  USING (
+    auth_role() = 'staff' AND
+    assigned_staff_id IN (SELECT id FROM profiles WHERE auth_user_id = auth.uid())
+  );
 
 -- packages
 CREATE POLICY "admin_all" ON packages
@@ -273,7 +282,9 @@ CREATE POLICY "staff_read" ON packages
     auth_role() = 'staff' AND
     student_id IN (
       SELECT id FROM students WHERE preferred_slot_id IN (
-        SELECT id FROM slots WHERE assigned_staff_id = auth.uid()
+        SELECT id FROM slots WHERE assigned_staff_id IN (
+          SELECT id FROM profiles WHERE auth_user_id = auth.uid()
+        )
       )
     )
   );
@@ -286,7 +297,11 @@ CREATE POLICY "staff_own_slot" ON sessions
   FOR ALL TO authenticated
   USING (
     auth_role() = 'staff' AND
-    slot_id IN (SELECT id FROM slots WHERE assigned_staff_id = auth.uid()) AND
+    slot_id IN (
+      SELECT id FROM slots WHERE assigned_staff_id IN (
+        SELECT id FROM profiles WHERE auth_user_id = auth.uid()
+      )
+    ) AND
     session_date = CURRENT_DATE
   );
 

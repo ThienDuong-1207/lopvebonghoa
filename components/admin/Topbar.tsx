@@ -7,7 +7,7 @@ export default async function Topbar({ title }: { title?: string }) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, avatar_url')
-    .eq('id', user?.id ?? '')
+    .eq('auth_user_id', user?.id ?? '')
     .single()
 
   const initials = profile?.full_name
