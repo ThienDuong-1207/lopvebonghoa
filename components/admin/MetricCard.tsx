@@ -10,10 +10,10 @@ interface Props {
 }
 
 const colorMap = {
-  blue: { text: 'text-[#0D2545]', icon: 'bg-[#0D2545]/8 text-[#0D2545]' },
-  green: { text: 'text-emerald-600', icon: 'bg-emerald-50 text-emerald-600' },
-  amber: { text: 'text-amber-600', icon: 'bg-amber-50 text-amber-600' },
-  red: { text: 'text-red-500', icon: 'bg-red-50 text-red-500' },
+  blue: { text: 'text-[#0D2545] dark:text-blue-300', icon: 'bg-[#0D2545]/10 text-[#0D2545] dark:bg-blue-900/30 dark:text-blue-300' },
+  green: { text: 'text-emerald-600 dark:text-emerald-400', icon: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  amber: { text: 'text-amber-600 dark:text-amber-400', icon: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+  red: { text: 'text-red-500 dark:text-red-400', icon: 'bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-400' },
 }
 
 export default function MetricCard({ title, value, sub, color = 'blue', icon: Icon, hero }: Props) {
@@ -38,9 +38,9 @@ export default function MetricCard({ title, value, sub, color = 'blue', icon: Ic
 
   const c = colorMap[color]
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm">
+    <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800">
       <div className="mb-4 flex items-start justify-between">
-        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
         {Icon && (
           <div className={`rounded-xl p-2 ${c.icon}`}>
             <Icon className="h-4 w-4" />
@@ -48,7 +48,7 @@ export default function MetricCard({ title, value, sub, color = 'blue', icon: Ic
         )}
       </div>
       <p className={`text-3xl font-bold ${c.text}`}>{value}</p>
-      {sub && <p className="mt-1.5 text-xs text-gray-400">{sub}</p>}
+      {sub && <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
     </div>
   )
 }

@@ -126,9 +126,9 @@ export default async function AdminDashboard() {
         {/* Row 2 — Chart + Cảnh báo */}
         <div className="mb-5 grid gap-4 xl:grid-cols-5">
           {/* Attendance chart */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-3">
+          <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800 xl:col-span-3">
             <div className="mb-1 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Điểm danh tuần này</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100">Điểm danh tuần này</h3>
               <span className="text-xs text-gray-400">{DAY_FULL[todayDow]}</span>
             </div>
             <p className="mb-4 text-xs text-gray-400">Số lượt có mặt theo ngày · màu vàng = hôm nay</p>
@@ -136,9 +136,9 @@ export default async function AdminDashboard() {
           </div>
 
           {/* Cảnh báo */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-2">
+          <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800 xl:col-span-2">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Cảnh báo</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100">Cảnh báo</h3>
               {(unresolvedAlerts ?? 0) > 0 && (
                 <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-500">
                   {unresolvedAlerts}
@@ -153,7 +153,7 @@ export default async function AdminDashboard() {
                   <div key={alert.id} className="flex items-center gap-3">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${ALERT_DOT[alert.type]}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-gray-700">{alert.students?.full_name}</p>
+                      <p className="truncate text-sm font-medium text-gray-700 dark:text-gray-200">{alert.students?.full_name}</p>
                       <p className="text-xs text-gray-400">{ALERT_LABEL[alert.type]}</p>
                     </div>
                   </div>
@@ -213,9 +213,9 @@ export default async function AdminDashboard() {
           </div>
 
           {/* Today's slots */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-3">
+          <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800 xl:col-span-3">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100">
                 Ca hôm nay
                 <span className="ml-2 text-sm font-normal text-gray-400">— {DAY_FULL[todayDow]}</span>
               </h3>
@@ -225,7 +225,7 @@ export default async function AdminDashboard() {
             </div>
 
             {todaySlots.length === 0 ? (
-              <div className="flex h-32 items-center justify-center rounded-xl bg-gray-50">
+              <div className="flex h-32 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-700/50">
                 <p className="text-sm text-gray-400">Không có ca hôm nay</p>
               </div>
             ) : (
@@ -233,14 +233,14 @@ export default async function AdminDashboard() {
                 {todaySlots.map((slot: Slot) => (
                   <div
                     key={slot.id}
-                    className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3.5"
+                    className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3.5 dark:border-gray-700 dark:bg-gray-700/30"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C9A84C]/10">
                         <Clock className="h-4 w-4 text-[#C9A84C]" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800">{slot.name}</p>
+                        <p className="font-semibold text-gray-800 dark:text-gray-100">{slot.name}</p>
                         <p className="text-xs text-gray-400">
                           {formatTime(slot.time_start)} – {formatTime(slot.time_end)}
                         </p>

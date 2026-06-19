@@ -53,20 +53,20 @@ export default async function StaffHomePage() {
 
         {/* Stats */}
         <div className="flex flex-col gap-3">
-          <div className="flex-1 rounded-2xl bg-white p-3 shadow-sm">
+          <div className="flex-1 rounded-2xl bg-white p-3 shadow-sm dark:bg-gray-800">
             <CheckCircle className="mb-1.5 h-4 w-4 text-emerald-500" />
-            <div className="text-xl font-bold text-gray-800">{checkedInCount ?? 0}</div>
+            <div className="text-xl font-bold text-gray-800 dark:text-gray-100">{checkedInCount ?? 0}</div>
             <div className="text-[10px] text-gray-400">Đã điểm danh</div>
           </div>
-          <div className="flex-1 rounded-2xl bg-white p-3 shadow-sm">
+          <div className="flex-1 rounded-2xl bg-white p-3 shadow-sm dark:bg-gray-800">
             <CalendarDays className="mb-1.5 h-4 w-4 text-[#C9A84C]" />
-            <div className="text-xl font-bold text-gray-800">{(slots ?? []).length}</div>
+            <div className="text-xl font-bold text-gray-800 dark:text-gray-100">{(slots ?? []).length}</div>
             <div className="text-[10px] text-gray-400">Ca / tuần</div>
           </div>
         </div>
 
         {/* Week mini calendar */}
-        <div className="rounded-2xl bg-white p-3 shadow-sm">
+        <div className="rounded-2xl bg-white p-3 shadow-sm dark:bg-gray-800">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Tuần này</p>
           <div className="grid grid-cols-4 gap-1">
             {DAY_NAMES.slice(1, 7).concat(DAY_NAMES[0]).map((name, i) => {
@@ -77,7 +77,7 @@ export default async function StaffHomePage() {
                 <div
                   key={dow}
                   className={`rounded-lg py-1.5 text-center text-[10px] font-medium ${
-                    isToday ? 'bg-[#C9A84C] text-white' : hasSlot ? 'bg-[#C9A84C]/10 text-[#C9A84C]' : 'bg-gray-50 text-gray-300'
+                    isToday ? 'bg-[#C9A84C] text-white' : hasSlot ? 'bg-[#C9A84C]/10 text-[#C9A84C]' : 'bg-gray-50 text-gray-300 dark:bg-gray-700 dark:text-gray-600'
                   }`}
                 >
                   {name}
@@ -91,7 +91,7 @@ export default async function StaffHomePage() {
 
       {/* Ca hôm nay */}
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
           Ca hôm nay — <span className="font-normal text-gray-400">{DAY_FULL[todayDow]}</span>
         </h3>
         <Link href="/staff/diem-danh" className="flex items-center gap-1 text-xs text-[#C9A84C]">
@@ -100,7 +100,7 @@ export default async function StaffHomePage() {
       </div>
 
       {todaySlots.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-2xl bg-white shadow-sm">
+        <div className="flex h-24 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-gray-800">
           <p className="text-sm text-gray-400">Không có ca hôm nay</p>
         </div>
       ) : (
@@ -108,14 +108,14 @@ export default async function StaffHomePage() {
           {todaySlots.map((slot: Slot) => (
             <div
               key={slot.id}
-              className="flex items-center justify-between rounded-2xl bg-white px-4 py-4 shadow-sm"
+              className="flex items-center justify-between rounded-2xl bg-white px-4 py-4 shadow-sm dark:bg-gray-800"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C9A84C]/10">
                   <Clock className="h-4 w-4 text-[#C9A84C]" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{slot.name}</p>
+                  <p className="font-semibold text-gray-800 dark:text-gray-100">{slot.name}</p>
                   <p className="text-xs text-gray-400">
                     {formatTime(slot.time_start)} – {formatTime(slot.time_end)}
                   </p>

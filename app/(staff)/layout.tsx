@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import BottomNav from '@/components/staff/BottomNav'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bell, LogOut } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -21,20 +22,21 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     .toUpperCase() ?? 'TV'
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F5F5F2] pb-16">
-      <header className="border-b border-gray-100 bg-white px-4 py-4">
+    <div className="flex min-h-screen flex-col bg-[#F5F5F2] pb-16 dark:bg-gray-950">
+      <header className="border-b border-gray-100 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
               Lớp Vẽ Sáng Tạo
             </p>
-            <h1 className="mt-0.5 text-lg font-bold text-gray-900">
+            <h1 className="mt-0.5 text-lg font-bold text-gray-900 dark:text-white">
               {profile?.full_name ?? 'Trợ giảng'}
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-400">
+          <div className="flex items-center gap-2">
+            <ThemeToggle className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200" />
+            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-400">
               <Bell className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2">
@@ -47,7 +49,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               <form action="/auth/signout" method="post">
                 <button
                   type="submit"
-                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700"
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                 </button>
