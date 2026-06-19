@@ -1,0 +1,138 @@
+export const dynamic = 'force-dynamic'
+
+import { createClient } from '@/lib/supabase/server'
+import Topbar from '@/components/admin/Topbar'
+import { redirect } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import type { Profile, Slot } from '@/lib/types/database'
+
+async function createStaff(formData: FormData) {
+  'use server'
+  const supabase = createClient()
+  await supabase.from('profiles').insert({
+    full_name: formData.get('full_name') as string,
+    role: 'staff',
+    phone: (formData.get('phone') as string) || null,
+    is_active: true,
+  })
+  redirect('/admin/staff')
+}
+
+async function toggleStaff(id: string, isActive: boolean) {
+  'use server'
+  const supabase = createClient()
+  await supabase.from('profiles').update({ is_active: !isActive }).eq('id', id)
+  redirect('/admin/staff')
+}
+
+export default async function StaffManagePage() {
+  const supabase = createClient()
+
+  const [{ data: staffList }, { data: slots }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'staff')
+      .order('full_name'),
+    supabase.from('slots').select('id, name, assigned_staff_id').eq('is_active', true),
+  ])
+
+  function getStaffSlots(staffId: string) {
+    return (slots ?? []).filter((s: Pick<Slot, 'id' | 'name' | 'assigned_staff_id'>) => s.assigned_staff_id === staffId)
+  }
+
+  return (
+    <>
+      <Topbar title="Quản lý Trợ giảng" />
+      <div className="p-6">
+        <div className="grid gap-6 xl:grid-cols-3">
+          {/* Danh sách staff */}
+          <div className="xl:col-span-2">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Trợ giảng</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">SĐT</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Ca phụ trách</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Trạng thái</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(staffList ?? []).map((s: Profile) => {
+                    const staffSlots = getStaffSlots(s.id)
+                    return (
+                      <tr key={s.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{s.full_name}</div>
+                          {!s.id && <div className="text-xs text-amber-500">Chưa đăng nhập lần đầu</div>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{s.phone ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          {staffSlots.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {staffSlots.map((slot: Pick<Slot, 'id' | 'name'>) => (
+                                <Badge key={slot.id} variant="outline" className="text-xs">
+                                  {slot.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">Chưa phân công</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={s.is_active ? 'default' : 'secondary'}>
+                            {s.is_active ? 'Hoạt động' : 'Bị khóa'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <form action={toggleStaff.bind(null, s.id, s.is_active)}>
+                            <button className="text-xs text-gray-400 hover:text-[#0D2545]">
+                              {s.is_active ? 'Khóa' : 'Mở khóa'}
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {(staffList ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-10 text-center text-gray-400">
+                        Chưa có trợ giảng nào
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Form thêm staff */}
+          <div>
+            <h3 className="mb-4 font-semibold">Thêm trợ giảng mới</h3>
+            <form action={createStaff} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Họ tên đầy đủ *</label>
+                <Input name="full_name" required placeholder="Nguyễn Thị Huyền" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Số điện thoại</label>
+                <Input name="phone" placeholder="0901234567" />
+              </div>
+              <p className="text-xs text-gray-400">
+                Trợ giảng sẽ tự đăng nhập bằng Google. Hệ thống sẽ liên kết tài khoản dựa trên họ tên.
+              </p>
+              <Button type="submit" className="w-full bg-[#0D2545] text-white hover:bg-[#0D2545]/90">
+                Thêm trợ giảng
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
