@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { Check, X } from 'lucide-react'
 
 interface Props {
   studentId: string
@@ -18,9 +20,10 @@ export default function CheckinButton({
   slotId,
   sessionDate,
   initialStatus,
-  sessionId,
+  sessionId: initialSessionId,
 }: Props) {
   const [status, setStatus] = useState<'present' | 'absent' | null>(initialStatus)
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(initialSessionId)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
@@ -28,21 +31,49 @@ export default function CheckinButton({
     if (loading) return
     setLoading(true)
 
-    if (sessionId && status !== null) {
-      // Undo: xoá session cũ
-      await supabase.from('sessions').delete().eq('id', sessionId)
-      setStatus(null)
-    } else {
-      const { data: { user } } = await supabase.auth.getUser()
-      await supabase.from('sessions').insert({
-        package_id: packageId,
-        student_id: studentId,
-        slot_id: slotId,
-        session_date: sessionDate,
-        checked_in_by: user?.id,
-        status: newStatus,
-      })
-      setStatus(newStatus)
+    try {
+      if (status === newStatus && currentSessionId) {
+        // Bấm lại cùng trạng thái → huỷ
+        const { error } = await supabase.from('sessions').delete().eq('id', currentSessionId)
+        if (error) throw error
+        setStatus(null)
+        setCurrentSessionId(undefined)
+        toast('Đã huỷ điểm danh', { icon: '↩' })
+      } else if (currentSessionId) {
+        // Đổi trạng thái (present ↔ absent)
+        const { error } = await supabase
+          .from('sessions')
+          .update({ status: newStatus })
+          .eq('id', currentSessionId)
+        if (error) throw error
+        setStatus(newStatus)
+        toast.success(newStatus === 'present' ? 'Đã cập nhật: Có mặt' : 'Đã cập nhật: Vắng mặt')
+      } else {
+        // Chưa có session → tạo mới
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data, error } = await supabase
+          .from('sessions')
+          .insert({
+            package_id: packageId,
+            student_id: studentId,
+            slot_id: slotId,
+            session_date: sessionDate,
+            checked_in_by: user?.id,
+            status: newStatus,
+          })
+          .select('id')
+          .single()
+        if (error) throw error
+        setStatus(newStatus)
+        setCurrentSessionId(data?.id)
+        if (newStatus === 'present') {
+          toast.success('Có mặt ✓')
+        } else {
+          toast.warning('Vắng mặt đã ghi nhận')
+        }
+      }
+    } catch {
+      toast.error('Có lỗi xảy ra, thử lại.')
     }
 
     setLoading(false)
@@ -53,26 +84,26 @@ export default function CheckinButton({
       <button
         onClick={() => handleCheckin('present')}
         disabled={loading}
-        className={`h-11 w-11 rounded-full text-lg font-bold transition-colors ${
+        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold transition-all ${
           status === 'present'
-            ? 'bg-green-500 text-white'
-            : 'bg-gray-100 text-gray-400 hover:bg-green-100'
+            ? 'bg-emerald-500 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-400 hover:bg-emerald-100 hover:text-emerald-600'
         }`}
         title="Có mặt"
       >
-        ✓
+        <Check className="h-5 w-5" strokeWidth={2.5} />
       </button>
       <button
         onClick={() => handleCheckin('absent')}
         disabled={loading}
-        className={`h-11 w-11 rounded-full text-lg font-bold transition-colors ${
+        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold transition-all ${
           status === 'absent'
-            ? 'bg-red-400 text-white'
-            : 'bg-gray-100 text-gray-400 hover:bg-red-100'
+            ? 'bg-red-400 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-500'
         }`}
         title="Vắng"
       >
-        ✗
+        <X className="h-5 w-5" strokeWidth={2.5} />
       </button>
     </div>
   )
