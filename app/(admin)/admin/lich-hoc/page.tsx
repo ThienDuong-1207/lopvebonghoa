@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { UserRound } from 'lucide-react'
 import type { Slot, Profile } from '@/lib/types/database'
 
 const DAY_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
@@ -75,7 +76,10 @@ export default async function LichHocPage() {
                             {slot.time_start.slice(0, 5)}–{slot.time_end.slice(0, 5)} · Tối đa {slot.max_capacity}
                           </div>
                           {slot.profiles && (
-                            <div className="text-xs text-gray-400">👩‍🏫 {slot.profiles.full_name}</div>
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <UserRound className="h-3 w-3" />
+                              {slot.profiles.full_name}
+                            </div>
                           )}
                         </div>
                         <form action={toggleSlot.bind(null, slot.id, slot.is_active)}>

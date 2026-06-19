@@ -34,7 +34,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   return (
     <>
-      <Topbar title={student.full_name} />
+      <Topbar title={student.full_name} backHref="/admin/hoc-sinh" backLabel="Học sinh" />
       <div className="p-6">
         <div className="grid gap-6 xl:grid-cols-3">
           {/* Thông tin cá nhân */}

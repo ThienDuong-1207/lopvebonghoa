@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import Topbar from '@/components/admin/Topbar'
 import AlertRow from '@/components/admin/AlertRow'
 import { Badge } from '@/components/ui/badge'
+import { CheckCircle2 } from 'lucide-react'
 
 export default async function CanhBaoPage() {
   const supabase = createClient()
@@ -25,15 +26,23 @@ export default async function CanhBaoPage() {
   const nearEnd = (alerts ?? []).filter((a: { type: string }) => a.type === 'near_end')
   const inactive = (alerts ?? []).filter((a: { type: string }) => a.type === 'inactive')
 
+  const dotColor: Record<string, string> = {
+    red: 'bg-red-500',
+    amber: 'bg-amber-400',
+    gray: 'bg-gray-400',
+  }
+
   function renderGroup(
     title: string,
     items: typeof alerts,
-    badge?: string
+    badge?: string,
+    color: 'red' | 'amber' | 'gray' = 'gray'
   ) {
     if (!items || items.length === 0) return null
     return (
       <div className="mb-8">
         <div className="mb-3 flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${dotColor[color]}`} />
           <h3 className="font-semibold text-gray-700">{title}</h3>
           {badge && <Badge variant="destructive">{badge}</Badge>}
         </div>
@@ -77,15 +86,15 @@ export default async function CanhBaoPage() {
         {(alerts ?? []).length === 0 ? (
           <div className="flex h-[50vh] items-center justify-center text-center text-gray-400">
             <div>
-              <div className="text-4xl">✅</div>
+              <CheckCircle2 className="mx-auto h-12 w-12 text-green-400" />
               <p className="mt-3">Không có cảnh báo nào cần xử lý</p>
             </div>
           </div>
         ) : (
           <>
-            {renderGroup('🔴 Hết gói', packageEnded, String(packageEnded.length))}
-            {renderGroup('🟠 Sắp hết (còn 1 buổi)', nearEnd, String(nearEnd.length))}
-            {renderGroup('🟢 Nghỉ >14 ngày', inactive, String(inactive.length))}
+            {renderGroup('Hết gói', packageEnded, String(packageEnded.length), 'red')}
+            {renderGroup('Sắp hết — còn 1 buổi', nearEnd, String(nearEnd.length), 'amber')}
+            {renderGroup('Nghỉ trên 14 ngày', inactive, String(inactive.length), 'gray')}
           </>
         )}
       </div>

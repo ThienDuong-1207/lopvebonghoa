@@ -6,6 +6,7 @@ import Topbar from '@/components/admin/Topbar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { Users, UserCheck, TriangleAlert, Banknote } from 'lucide-react'
 import type { Slot, Alert, Student } from '@/lib/types/database'
 
 const DAY_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
@@ -70,18 +71,20 @@ export default async function AdminDashboard() {
       <div className="p-6">
         {/* Metrics */}
         <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <MetricCard title="Học sinh hôm nay" value={todayCheckins ?? 0} color="blue" />
-          <MetricCard title="Tổng học sinh active" value={activeStudents ?? 0} color="green" />
+          <MetricCard title="Điểm danh hôm nay" value={todayCheckins ?? 0} color="blue" icon={UserCheck} />
+          <MetricCard title="Học sinh đang học" value={activeStudents ?? 0} color="green" icon={Users} />
           <MetricCard
             title="Cần xử lý"
             value={(pendingRegistrations ?? 0) + (unresolvedAlerts ?? 0)}
             sub={`${pendingRegistrations ?? 0} đăng ký · ${unresolvedAlerts ?? 0} cảnh báo`}
             color="amber"
+            icon={TriangleAlert}
           />
           <MetricCard
             title="Doanh thu tháng"
             value={`${(monthRevenue / 1_000_000).toFixed(1)}M`}
             color="green"
+            icon={Banknote}
           />
         </div>
 
