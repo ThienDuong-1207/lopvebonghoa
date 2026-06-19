@@ -55,10 +55,10 @@ export default async function StaffManagePage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500">Trợ giảng</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500">SĐT</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500">Ca phụ trách</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500">Trạng thái</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Trợ giảng</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">SĐT</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Ca phụ trách</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Trạng thái</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>

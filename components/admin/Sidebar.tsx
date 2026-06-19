@@ -12,6 +12,7 @@ import {
   CalendarDays,
   UserCog,
   LogOut,
+  Palette,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -29,12 +30,23 @@ export default function Sidebar() {
 
   return (
     <aside className="flex h-screen w-56 flex-col bg-[#0D2545]">
-      <div className="px-5 py-5">
-        <span className="text-base font-bold text-white">Lớp Vẽ Sáng Tạo</span>
-        <div className="mt-0.5 text-xs font-medium text-[#C9A84C]">Admin Panel</div>
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-5 py-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C9A84C]/20">
+          <Palette className="h-4 w-4 text-[#C9A84C]" />
+        </div>
+        <div>
+          <div className="text-sm font-bold leading-tight text-white">Lớp Vẽ</div>
+          <div className="text-[10px] font-medium uppercase tracking-widest text-[#C9A84C]/80">
+            Admin
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 px-3 py-2">
+      <div className="mx-5 mb-2 h-px bg-white/10" />
+
+      {/* Nav */}
+      <nav className="flex-1 space-y-0.5 px-2 py-3">
         {NAV_ITEMS.map((item) => {
           const isActive =
             item.href === '/admin'
@@ -46,29 +58,34 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150',
                 isActive
-                  ? 'bg-white/15 text-white'
-                  : 'text-white/60 hover:bg-white/10 hover:text-white/90'
+                  ? 'bg-white/15 font-medium text-white'
+                  : 'text-white/55 hover:bg-white/8 hover:text-white/90'
               )}
             >
+              {isActive && (
+                <span className="absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full bg-[#C9A84C]" />
+              )}
               <Icon
-                className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#C9A84C]' : '')}
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-colors',
+                  isActive ? 'text-[#C9A84C]' : 'text-current'
+                )}
               />
               {item.label}
-              {isActive && (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#C9A84C]" />
-              )}
             </Link>
           )
         })}
       </nav>
 
-      <div className="border-t border-white/10 px-3 py-4">
+      {/* Footer */}
+      <div className="mx-5 mb-2 h-px bg-white/10" />
+      <div className="px-2 py-3">
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/55 transition-colors hover:bg-white/8 hover:text-white/90"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/40 transition-all duration-150 hover:bg-white/8 hover:text-white/80"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             Đăng xuất

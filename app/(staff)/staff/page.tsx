@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { CalendarCheck, CheckCircle, CalendarDays } from 'lucide-react'
 import type { Slot } from '@/lib/types/database'
 
 const DAY_NAMES = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
@@ -23,7 +23,6 @@ export default async function StaffHomePage() {
     .eq('auth_user_id', user?.id ?? '')
     .single()
 
-  // Slots của staff này — dùng profiles.id, không phải auth user id
   const { data: slots } = await supabase
     .from('slots')
     .select('*')
@@ -33,89 +32,120 @@ export default async function StaffHomePage() {
 
   const today = new Date()
   const todayDow = today.getDay()
+  const todayStr = today.toISOString().split('T')[0]
 
   const todaySlots = (slots ?? []).filter((s: Slot) => s.day_of_week === todayDow)
 
-  // Đếm điểm danh hôm nay
-  const todayStr = today.toISOString().split('T')[0]
   const { count: checkedInCount } = await supabase
     .from('sessions')
     .select('*', { count: 'exact', head: true })
     .in('slot_id', todaySlots.map((s: Slot) => s.id))
     .eq('session_date', todayStr)
 
+  const stats = [
+    {
+      label: 'Ca hôm nay',
+      value: todaySlots.length,
+      icon: CalendarCheck,
+      accent: 'text-[#0D2545]',
+      iconBg: 'bg-[#0D2545]/8',
+    },
+    {
+      label: 'Đã điểm danh',
+      value: checkedInCount ?? 0,
+      icon: CheckCircle,
+      accent: 'text-emerald-600',
+      iconBg: 'bg-emerald-50',
+    },
+    {
+      label: 'Ca / tuần',
+      value: (slots ?? []).length,
+      icon: CalendarDays,
+      accent: 'text-[#C9A84C]',
+      iconBg: 'bg-amber-50',
+    },
+  ]
+
   return (
     <div className="p-4">
-      <div className="mb-6">
-        <p className="text-sm text-gray-500">Xin chào,</p>
-        <h2 className="text-xl font-bold text-[#0D2545]">{profile?.full_name ?? 'Trợ giảng'}</h2>
+      {/* Greeting */}
+      <div className="mb-5">
+        <p className="text-xs font-medium uppercase tracking-widest text-gray-400">Xin chào</p>
+        <h2 className="mt-0.5 text-xl font-bold text-[#0D2545]">
+          {profile?.full_name ?? 'Trợ giảng'}
+        </h2>
       </div>
 
-      {/* Summary bar */}
+      {/* Stats */}
       <div className="mb-6 grid grid-cols-3 gap-3">
-        <div className="rounded-xl bg-[#0D2545] p-3 text-center text-white">
-          <div className="text-2xl font-bold">{todaySlots.length}</div>
-          <div className="text-xs text-white/70">Ca hôm nay</div>
-        </div>
-        <div className="rounded-xl bg-green-50 p-3 text-center">
-          <div className="text-2xl font-bold text-green-600">{checkedInCount ?? 0}</div>
-          <div className="text-xs text-gray-500">Đã điểm danh</div>
-        </div>
-        <div className="rounded-xl bg-[#C9A84C]/10 p-3 text-center">
-          <div className="text-2xl font-bold text-[#C9A84C]">{(slots ?? []).length}</div>
-          <div className="text-xs text-gray-500">Ca/tuần</div>
-        </div>
+        {stats.map(({ label, value, icon: Icon, accent, iconBg }) => (
+          <div key={label} className="rounded-xl bg-white p-3.5 shadow-sm">
+            <div className={`mb-2 inline-flex rounded-lg p-1.5 ${iconBg}`}>
+              <Icon className={`h-4 w-4 ${accent}`} />
+            </div>
+            <div className={`text-2xl font-bold ${accent}`}>{value}</div>
+            <div className="mt-0.5 text-xs text-gray-500">{label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Ca hôm nay */}
-      <h3 className="mb-3 font-semibold text-gray-700">Ca hôm nay — {DAY_FULL[todayDow]}</h3>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-700">
+          Ca hôm nay —{' '}
+          <span className="font-normal text-gray-400">{DAY_FULL[todayDow]}</span>
+        </h3>
+      </div>
+
       {todaySlots.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-gray-400">
-            Không có ca hôm nay
-          </CardContent>
-        </Card>
+        <div className="rounded-xl bg-white py-8 text-center shadow-sm">
+          <CalendarCheck className="mx-auto h-8 w-8 text-gray-200" />
+          <p className="mt-2 text-sm text-gray-400">Không có ca hôm nay</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {todaySlots.map((slot: Slot) => (
-            <Card key={slot.id} className="border-l-4 border-l-green-400">
-              <CardContent className="flex items-center justify-between py-4">
-                <div>
-                  <div className="font-semibold text-[#0D2545]">{slot.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {formatTime(slot.time_start)} – {formatTime(slot.time_end)}
-                  </div>
+            <div
+              key={slot.id}
+              className="flex items-center justify-between rounded-xl border-l-4 border-emerald-400 bg-white py-3.5 pl-4 pr-4 shadow-sm"
+            >
+              <div>
+                <div className="font-semibold text-[#0D2545]">{slot.name}</div>
+                <div className="mt-0.5 text-sm text-gray-400">
+                  {formatTime(slot.time_start)} – {formatTime(slot.time_end)}
                 </div>
-                <Link href="/staff/diem-danh">
-                  <Button className="bg-[#0D2545] text-white hover:bg-[#0D2545]/90">
-                    Vào điểm danh
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+              </div>
+              <Link href="/staff/diem-danh">
+                <Button size="sm" className="bg-[#0D2545] text-white hover:bg-[#0D2545]/90">
+                  Điểm danh
+                </Button>
+              </Link>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Lịch tuần mini */}
-      <h3 className="mb-3 mt-6 font-semibold text-gray-700">Lịch tuần này</h3>
-      <div className="grid grid-cols-7 gap-1">
+      {/* Lịch tuần */}
+      <h3 className="mb-2.5 mt-6 text-sm font-semibold text-gray-700">Lịch tuần này</h3>
+      <div className="grid grid-cols-7 gap-1.5">
         {DAY_NAMES.map((name, idx) => {
           const hasSlot = (slots ?? []).some((s: Slot) => s.day_of_week === idx)
           const isToday = idx === todayDow
           return (
             <div
               key={idx}
-              className={`rounded-lg p-2 text-center text-xs font-medium ${
+              className={`rounded-xl py-2.5 text-center text-xs font-medium shadow-sm transition-colors ${
                 isToday
                   ? 'bg-[#0D2545] text-white'
                   : hasSlot
-                  ? 'bg-[#C9A84C]/20 text-[#C9A84C]'
-                  : 'bg-gray-100 text-gray-400'
+                  ? 'bg-[#C9A84C]/15 text-[#C9A84C]'
+                  : 'bg-white text-gray-300'
               }`}
             >
-              {name}
-              {hasSlot && <div className="mt-1 text-[10px]">●</div>}
+              <div>{name}</div>
+              {hasSlot && (
+                <div className={`mx-auto mt-1 h-1 w-1 rounded-full ${isToday ? 'bg-[#C9A84C]' : 'bg-[#C9A84C]'}`} />
+              )}
             </div>
           )
         })}

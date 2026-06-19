@@ -26,25 +26,35 @@ export default async function Topbar({ title, backHref, backLabel }: TopbarProps
     .toUpperCase() ?? 'AD'
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div className="flex items-center gap-3">
+    <header className="flex h-16 items-center justify-between bg-white px-6 shadow-sm">
+      <div className="flex items-center gap-2">
         {backHref && (
-          <Link
-            href={backHref}
-            className="flex items-center gap-1 text-sm text-gray-400 hover:text-[#0D2545]"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {backLabel ?? 'Quay lại'}
-          </Link>
+          <>
+            <Link
+              href={backHref}
+              className="flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-700"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {backLabel ?? 'Quay lại'}
+            </Link>
+            <span className="text-gray-200">·</span>
+          </>
         )}
-        {backHref && <span className="text-gray-300">/</span>}
-        <h1 className="text-base font-semibold text-gray-800">{title ?? 'Admin'}</h1>
+        <h1 className="text-sm font-semibold text-gray-800">{title ?? 'Admin'}</h1>
       </div>
+
       <div className="flex items-center gap-3">
-        <span className="hidden text-sm text-gray-500 sm:block">{profile?.full_name}</span>
-        <Avatar className="h-8 w-8">
+        <div className="text-right">
+          <div className="hidden text-sm font-medium text-gray-700 sm:block">
+            {profile?.full_name}
+          </div>
+          <div className="hidden text-xs text-gray-400 sm:block">Admin</div>
+        </div>
+        <Avatar className="h-9 w-9 ring-2 ring-[#C9A84C]/30">
           <AvatarImage src={profile?.avatar_url ?? ''} />
-          <AvatarFallback className="bg-[#0D2545] text-xs text-white">{initials}</AvatarFallback>
+          <AvatarFallback className="bg-[#0D2545] text-xs font-semibold text-white">
+            {initials}
+          </AvatarFallback>
         </Avatar>
       </div>
     </header>

@@ -87,11 +87,11 @@ export default async function HocSinhPage({ searchParams }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Học sinh</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Phụ huynh</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Số điện thoại</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Ca học</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Trạng thái</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Học sinh</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Phụ huynh</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Số điện thoại</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Ca học</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Trạng thái</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
