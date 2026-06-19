@@ -1,15 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Bell } from 'lucide-react'
 
 interface TopbarProps {
   title?: string
+  subtitle?: string
   backHref?: string
   backLabel?: string
 }
 
-export default async function Topbar({ title, backHref, backLabel }: TopbarProps) {
+export default async function Topbar({ title, subtitle, backHref, backLabel }: TopbarProps) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase
@@ -26,36 +27,40 @@ export default async function Topbar({ title, backHref, backLabel }: TopbarProps
     .toUpperCase() ?? 'AD'
 
   return (
-    <header className="flex h-16 items-center justify-between bg-white px-6 shadow-sm">
-      <div className="flex items-center gap-2">
+    <header className="flex items-center justify-between border-b border-gray-100 bg-white px-8 py-5">
+      <div>
         {backHref && (
-          <>
-            <Link
-              href={backHref}
-              className="flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-700"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              {backLabel ?? 'Quay lại'}
-            </Link>
-            <span className="text-gray-200">·</span>
-          </>
+          <Link
+            href={backHref}
+            className="mb-1.5 flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-700"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {backLabel ?? 'Quay lại'}
+          </Link>
         )}
-        <h1 className="text-sm font-semibold text-gray-800">{title ?? 'Admin'}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{title ?? 'Dashboard'}</h1>
+        {subtitle && <p className="mt-0.5 text-sm text-gray-400">{subtitle}</p>}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <div className="hidden text-sm font-medium text-gray-700 sm:block">
-            {profile?.full_name}
+      <div className="flex items-center gap-4">
+        {/* Notification bell */}
+        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+          <Bell className="h-5 w-5" />
+        </button>
+
+        {/* User */}
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10 ring-2 ring-[#C9A84C]/20">
+            <AvatarImage src={profile?.avatar_url ?? ''} />
+            <AvatarFallback className="bg-[#C9A84C] text-sm font-bold text-white">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="hidden sm:block">
+            <div className="text-sm font-semibold text-gray-800">{profile?.full_name}</div>
+            <div className="text-xs text-gray-400">{user?.email}</div>
           </div>
-          <div className="hidden text-xs text-gray-400 sm:block">Admin</div>
         </div>
-        <Avatar className="h-9 w-9 ring-2 ring-[#C9A84C]/30">
-          <AvatarImage src={profile?.avatar_url ?? ''} />
-          <AvatarFallback className="bg-[#0D2545] text-xs font-semibold text-white">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
       </div>
     </header>
   )

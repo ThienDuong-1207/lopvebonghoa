@@ -5,13 +5,13 @@ import MetricCard from '@/components/admin/MetricCard'
 import RevenueChart from '@/components/admin/RevenueChart'
 import AttendanceChart from '@/components/admin/AttendanceChart'
 import Topbar from '@/components/admin/Topbar'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Users, UserCheck, TriangleAlert, Banknote } from 'lucide-react'
+import { Users, UserCheck, TriangleAlert, Banknote, ArrowRight, Clock } from 'lucide-react'
 import type { Slot, Alert } from '@/lib/types/database'
 
 const DAY_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+const DAY_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
 const MONTH_NAMES = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12']
 const ALERT_LABEL: Record<string, string> = {
   near_end: 'Sắp hết gói',
@@ -19,16 +19,14 @@ const ALERT_LABEL: Record<string, string> = {
   inactive: 'Nghỉ >14 ngày',
   new_registration: 'Đăng ký mới',
 }
-const ALERT_COLOR: Record<string, 'destructive' | 'default' | 'secondary' | 'outline'> = {
-  near_end: 'default',
-  package_ended: 'destructive',
-  inactive: 'secondary',
-  new_registration: 'outline',
+const ALERT_DOT: Record<string, string> = {
+  near_end: 'bg-amber-400',
+  package_ended: 'bg-red-500',
+  inactive: 'bg-gray-400',
+  new_registration: 'bg-blue-400',
 }
 
-function formatTime(t: string) {
-  return t.slice(0, 5)
-}
+function formatTime(t: string) { return t.slice(0, 5) }
 
 export default async function AdminDashboard() {
   const supabase = createClient()
@@ -38,16 +36,13 @@ export default async function AdminDashboard() {
   const todayStr = today.toISOString().split('T')[0]
   const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
 
-  // Ngày đầu tuần (Thứ 2)
   const weekStart = new Date(today)
   weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7))
   const weekStartStr = weekStart.toISOString().split('T')[0]
 
-  // Ngày 6 tháng trước
   const sixMonthsAgo = new Date(today)
   sixMonthsAgo.setMonth(today.getMonth() - 5)
   sixMonthsAgo.setDate(1)
-  const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0]
 
   const [
     { count: activeStudents },
@@ -65,35 +60,29 @@ export default async function AdminDashboard() {
     supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('alerts').select('*', { count: 'exact', head: true }).eq('resolved', false),
     supabase.from('slots').select('*').eq('is_active', true).order('day_of_week').order('time_start'),
-    supabase.from('alerts').select('*, students(full_name)').eq('resolved', false).order('triggered_at', { ascending: false }).limit(5),
+    supabase.from('alerts').select('*, students(full_name)').eq('resolved', false).order('triggered_at', { ascending: false }).limit(4),
     supabase.from('packages').select('amount_paid').gte('paid_at', monthStart),
-    supabase.from('packages').select('amount_paid, paid_at').gte('paid_at', sixMonthsAgoStr),
+    supabase.from('packages').select('amount_paid, paid_at').gte('paid_at', sixMonthsAgo.toISOString().split('T')[0]),
     supabase.from('sessions').select('session_date, status').gte('session_date', weekStartStr),
   ])
 
-  const monthRevenue = (monthPayments ?? []).reduce(
-    (sum: number, p: { amount_paid: number }) => sum + p.amount_paid, 0
-  )
+  const monthRevenue = (monthPayments ?? []).reduce((s: number, p: { amount_paid: number }) => s + p.amount_paid, 0)
 
-  // Chart data: doanh thu 6 tháng
   const revenueChartData = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(today)
     d.setMonth(today.getMonth() - (5 - i))
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const revenue = (allPayments ?? [])
-      .filter((p: { paid_at: string }) => p.paid_at.startsWith(key))
-      .reduce((sum: number, p: { amount_paid: number }) => sum + p.amount_paid, 0)
-    return { month: MONTH_NAMES[d.getMonth()], revenue: revenue / 1_000_000 }
+    const rev = (allPayments ?? []).filter((p: { paid_at: string }) => p.paid_at.startsWith(key))
+      .reduce((s: number, p: { amount_paid: number }) => s + p.amount_paid, 0)
+    return { month: MONTH_NAMES[d.getMonth()], revenue: rev / 1_000_000 }
   })
 
-  // Chart data: điểm danh tuần này (T2→CN)
   const attendanceChartData = [1, 2, 3, 4, 5, 6, 0].map((dow) => {
     const d = new Date(weekStart)
     d.setDate(weekStart.getDate() + ((dow - 1 + 7) % 7))
     const dateStr = d.toISOString().split('T')[0]
     const count = (weekSessions ?? []).filter(
-      (s: { session_date: string; status: string }) =>
-        s.session_date === dateStr && s.status === 'present'
+      (s: { session_date: string; status: string }) => s.session_date === dateStr && s.status === 'present'
     ).length
     return { day: DAY_SHORT[dow], count, isToday: dow === todayDow }
   })
@@ -102,12 +91,23 @@ export default async function AdminDashboard() {
 
   return (
     <>
-      <Topbar title="Dashboard" />
-      <div className="p-6">
-        {/* Metrics */}
-        <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <MetricCard title="Điểm danh hôm nay" value={todayCheckins ?? 0} color="blue" icon={UserCheck} />
-          <MetricCard title="Học sinh đang học" value={activeStudents ?? 0} color="green" icon={Users} />
+      <Topbar title="Dashboard" subtitle="Quản lý lớp học và điểm danh" />
+
+      <div className="p-8">
+        {/* Row 1 — Metric cards */}
+        <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <MetricCard
+            hero
+            title="Điểm danh hôm nay"
+            value={todayCheckins ?? 0}
+            icon={UserCheck}
+          />
+          <MetricCard
+            title="Học sinh đang học"
+            value={activeStudents ?? 0}
+            color="blue"
+            icon={Users}
+          />
           <MetricCard
             title="Cần xử lý"
             value={(pendingRegistrations ?? 0) + (unresolvedAlerts ?? 0)}
@@ -123,95 +123,137 @@ export default async function AdminDashboard() {
           />
         </div>
 
-        {/* Charts */}
-        <div className="mb-6 grid gap-6 xl:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">
-                Doanh thu 6 tháng gần nhất
-              </CardTitle>
-              <p className="text-xs text-gray-400">Đơn vị: triệu đồng</p>
-            </CardHeader>
-            <CardContent>
-              <RevenueChart data={revenueChartData} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700">
-                Điểm danh tuần này
-              </CardTitle>
-              <p className="text-xs text-gray-400">Số lượt có mặt theo ngày</p>
-            </CardHeader>
-            <CardContent>
-              <AttendanceChart data={attendanceChartData} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-2">
-          {/* Ca hôm nay */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold text-gray-700">
-                Ca hôm nay — {DAY_SHORT[todayDow]}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {todaySlots.length === 0 ? (
-                <p className="text-sm text-gray-400">Không có ca hôm nay</p>
-              ) : (
-                todaySlots.map((slot: Slot) => (
-                  <div key={slot.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                    <div>
-                      <div className="font-medium text-gray-800">{slot.name}</div>
-                      <div className="text-sm text-gray-400">
-                        {formatTime(slot.time_start)}–{formatTime(slot.time_end)}
-                      </div>
-                    </div>
-                    <Badge variant="outline">Tối đa {slot.max_capacity}</Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+        {/* Row 2 — Chart + Cảnh báo */}
+        <div className="mb-5 grid gap-4 xl:grid-cols-5">
+          {/* Attendance chart */}
+          <div className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-3">
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-800">Điểm danh tuần này</h3>
+              <span className="text-xs text-gray-400">{DAY_FULL[todayDow]}</span>
+            </div>
+            <p className="mb-4 text-xs text-gray-400">Số lượt có mặt theo ngày · màu vàng = hôm nay</p>
+            <AttendanceChart data={attendanceChartData} />
+          </div>
 
           {/* Cảnh báo */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold text-gray-700">
-                Cảnh báo cần xử lý
-                {(unresolvedAlerts ?? 0) > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {unresolvedAlerts}
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <div className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-800">Cảnh báo</h3>
+              {(unresolvedAlerts ?? 0) > 0 && (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-500">
+                  {unresolvedAlerts}
+                </span>
+              )}
+            </div>
+            <div className="space-y-3">
               {(alerts ?? []).length === 0 ? (
                 <p className="text-sm text-gray-400">Không có cảnh báo</p>
               ) : (
                 (alerts ?? []).map((alert: Alert & { students: { full_name: string } }) => (
-                  <div key={alert.id} className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium text-gray-800">{alert.students?.full_name}</div>
-                      <Badge variant={ALERT_COLOR[alert.type]} className="mt-1 text-xs">
-                        {ALERT_LABEL[alert.type]}
-                      </Badge>
+                  <div key={alert.id} className="flex items-center gap-3">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${ALERT_DOT[alert.type]}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-700">{alert.students?.full_name}</p>
+                      <p className="text-xs text-gray-400">{ALERT_LABEL[alert.type]}</p>
                     </div>
-                    <Link href="/admin/canh-bao" className="text-xs text-[#0D2545] underline">
-                      Xử lý
-                    </Link>
                   </div>
                 ))
               )}
-              <Link href="/admin/canh-bao" className="block text-center text-xs text-gray-400 hover:text-[#0D2545]">
-                Xem tất cả →
+            </div>
+            <Link
+              href="/admin/canh-bao"
+              className="mt-4 flex items-center gap-1 text-xs font-medium text-[#C9A84C] hover:underline"
+            >
+              Xem tất cả <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Row 3 — Revenue chart + Today slots */}
+        <div className="grid gap-4 xl:grid-cols-5">
+          {/* Dark revenue card */}
+          <div className="relative overflow-hidden rounded-2xl bg-[#0D2545] p-6 text-white xl:col-span-2">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+            <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-[#C9A84C]/10" />
+
+            <p className="mb-1 text-sm text-white/50">Doanh thu tháng này</p>
+            <p className="text-4xl font-bold text-[#C9A84C]">
+              {(monthRevenue / 1_000_000).toFixed(1)}
+              <span className="ml-1 text-lg font-normal text-white/40">M đ</span>
+            </p>
+
+            <div className="mt-5 mb-1 flex justify-between text-xs text-white/40">
+              <span>Tiến độ</span>
+              <span>Mục tiêu 10M</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[#C9A84C] transition-all"
+                style={{ width: `${Math.min((monthRevenue / 10_000_000) * 100, 100).toFixed(0)}%` }}
+              />
+            </div>
+
+            <div className="mt-5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-white/50">Học sinh active</span>
+                <span className="text-sm font-semibold text-white">{activeStudents ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-white/50">Ca học / tuần</span>
+                <span className="text-sm font-semibold text-white">{(slots ?? []).length}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 border-t border-white/10 pt-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/30">
+                Doanh thu 6 tháng
+              </p>
+              <RevenueChart data={revenueChartData} />
+            </div>
+          </div>
+
+          {/* Today's slots */}
+          <div className="rounded-2xl bg-white p-6 shadow-sm xl:col-span-3">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-800">
+                Ca hôm nay
+                <span className="ml-2 text-sm font-normal text-gray-400">— {DAY_FULL[todayDow]}</span>
+              </h3>
+              <Link href="/admin/lich-hoc" className="text-xs text-[#C9A84C] hover:underline">
+                Quản lý →
               </Link>
-            </CardContent>
-          </Card>
+            </div>
+
+            {todaySlots.length === 0 ? (
+              <div className="flex h-32 items-center justify-center rounded-xl bg-gray-50">
+                <p className="text-sm text-gray-400">Không có ca hôm nay</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todaySlots.map((slot: Slot) => (
+                  <div
+                    key={slot.id}
+                    className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C9A84C]/10">
+                        <Clock className="h-4 w-4 text-[#C9A84C]" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">{slot.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {formatTime(slot.time_start)} – {formatTime(slot.time_end)}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      Tối đa {slot.max_capacity}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

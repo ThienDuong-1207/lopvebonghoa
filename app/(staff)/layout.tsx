@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import BottomNav from '@/components/staff/BottomNav'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LogOut } from 'lucide-react'
+import { Bell, LogOut } from 'lucide-react'
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -21,39 +21,35 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     .toUpperCase() ?? 'TV'
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 pb-16">
-      <header className="bg-[#0D2545] shadow-md">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#C9A84C]/25">
-              <span className="text-xs font-bold text-[#C9A84C]">LV</span>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">Lớp Vẽ Sáng Tạo</div>
-              <div className="text-[10px] font-medium uppercase tracking-widest text-[#C9A84C]/80">
-                Trợ giảng
-              </div>
-            </div>
+    <div className="flex min-h-screen flex-col bg-[#F5F5F2] pb-16">
+      <header className="border-b border-gray-100 bg-white px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
+              Lớp Vẽ Sáng Tạo
+            </p>
+            <h1 className="mt-0.5 text-lg font-bold text-gray-900">
+              {profile?.full_name ?? 'Trợ giảng'}
+            </h1>
           </div>
 
           <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 ring-2 ring-[#C9A84C]/30">
-              <AvatarImage src={profile?.avatar_url ?? ''} />
-              <AvatarFallback className="bg-white/20 text-xs font-semibold text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="text-xs font-semibold text-white">
-                {profile?.full_name ?? 'Trợ giảng'}
-              </div>
+            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-400">
+              <Bell className="h-4 w-4" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-9 w-9 ring-2 ring-[#C9A84C]/20">
+                <AvatarImage src={profile?.avatar_url ?? ''} />
+                <AvatarFallback className="bg-[#C9A84C] text-xs font-bold text-white">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
               <form action="/auth/signout" method="post">
                 <button
                   type="submit"
-                  className="flex items-center gap-1 text-[10px] text-white/50 transition-colors hover:text-white/80"
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700"
                 >
-                  <LogOut className="h-2.5 w-2.5" />
-                  Đăng xuất
+                  <LogOut className="h-3.5 w-3.5" />
                 </button>
               </form>
             </div>
