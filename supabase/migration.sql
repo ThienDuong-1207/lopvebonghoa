@@ -29,15 +29,23 @@ CREATE TABLE profiles (
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+-- parents
+CREATE TABLE parents (
+  id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  full_name   text NOT NULL,
+  phone       text NOT NULL,
+  phone_2     text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE parents ENABLE ROW LEVEL SECURITY;
+
 -- students
 CREATE TABLE students (
   id                uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   full_name         text NOT NULL,
   nickname          text,
   age               integer CHECK (age BETWEEN 4 AND 12),
-  parent_name       text NOT NULL,
-  parent_phone      text NOT NULL,
-  parent_phone_2    text,
+  parent_id         uuid NOT NULL REFERENCES parents(id) ON DELETE RESTRICT,
   preferred_slot_id uuid,
   notes             text,
   status            student_status NOT NULL DEFAULT 'active',
@@ -219,6 +227,21 @@ CREATE POLICY "staff_self" ON profiles
   FOR SELECT TO authenticated
   USING (id = auth.uid());
 
+-- parents
+CREATE POLICY "admin_all" ON parents
+  FOR ALL TO authenticated USING (auth_role() = 'admin');
+
+CREATE POLICY "staff_read_own_slot_parents" ON parents
+  FOR SELECT TO authenticated
+  USING (
+    auth_role() = 'staff' AND
+    id IN (
+      SELECT parent_id FROM students WHERE preferred_slot_id IN (
+        SELECT id FROM slots WHERE assigned_staff_id = auth.uid()
+      )
+    )
+  );
+
 -- students
 CREATE POLICY "admin_all" ON students
   FOR ALL TO authenticated USING (auth_role() = 'admin');
@@ -281,11 +304,20 @@ CREATE POLICY "admin_all" ON alerts
 -- ============================================================
 -- 7. Seed data mau (chinh lai truoc khi dung)
 -- ============================================================
--- Them admin dau tien (thay email = email Google thuc cua admin)
--- INSERT INTO profiles (id, full_name, role, is_active)
--- VALUES (NULL, 'Ten Admin', 'admin', true);
+-- Them admin dau tien:
+-- INSERT INTO profiles (full_name, role, is_active)
+-- VALUES ('Ten Admin', 'admin', true);
 --
 -- Them staff (Huyen, Huong):
--- INSERT INTO profiles (id, full_name, role, is_active)
--- VALUES (NULL, 'Huyền', 'staff', true),
---        (NULL, 'Hương', 'staff', true);
+-- INSERT INTO profiles (full_name, role, is_active)
+-- VALUES ('Huyền', 'staff', true),
+--        ('Hương', 'staff', true);
+--
+-- Vi du them phu huynh co 2 con:
+-- INSERT INTO parents (full_name, phone)
+-- VALUES ('Nguyễn Thị B', '0901234567')
+-- RETURNING id;
+-- -- Dung id tra ve o tren cho ca 2 hoc sinh:
+-- INSERT INTO students (full_name, age, parent_id, status)
+-- VALUES ('Bé An', 6, '<parent_id>', 'active'),
+--        ('Bé Bình', 8, '<parent_id>', 'active');

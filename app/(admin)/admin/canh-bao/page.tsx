@@ -14,8 +14,7 @@ export default async function CanhBaoPage() {
       *,
       students (
         full_name,
-        parent_name,
-        parent_phone,
+        parents ( full_name, phone ),
         packages ( used_sessions, total_sessions, status )
       )
     `)
@@ -46,8 +45,7 @@ export default async function CanhBaoPage() {
             resolved: boolean
             students: {
               full_name: string
-              parent_name: string
-              parent_phone: string
+              parents: { full_name: string; phone: string } | null
               packages: { used_sessions: number; total_sessions: number; status: string }[]
             }
           }) => {
@@ -58,8 +56,8 @@ export default async function CanhBaoPage() {
                 alertId={alert.id}
                 type={alert.type as 'package_ended' | 'near_end' | 'inactive' | 'new_registration'}
                 studentName={alert.students.full_name}
-                parentName={alert.students.parent_name}
-                parentPhone={alert.students.parent_phone}
+                parentName={alert.students.parents?.full_name ?? ''}
+                parentPhone={alert.students.parents?.phone ?? ''}
                 sessionsUsed={pkg?.used_sessions ?? 8}
                 sessionsLeft={pkg ? pkg.total_sessions - pkg.used_sessions : 0}
                 zaloSentAt={alert.zalo_sent_at}

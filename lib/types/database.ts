@@ -15,14 +15,20 @@ export interface Profile {
   created_at: string
 }
 
+export interface Parent {
+  id: string
+  full_name: string
+  phone: string
+  phone_2: string | null
+  created_at: string
+}
+
 export interface Student {
   id: string
   full_name: string
   nickname: string | null
   age: number | null
-  parent_name: string
-  parent_phone: string
-  parent_phone_2: string | null
+  parent_id: string
   preferred_slot_id: string | null
   notes: string | null
   status: StudentStatus
@@ -93,7 +99,8 @@ export interface Alert {
 }
 
 // Extended types with joins
-export interface StudentWithSlot extends Student {
+export interface StudentWithRelations extends Student {
+  parents: Parent
   slots: Slot | null
 }
 
@@ -102,12 +109,14 @@ export interface PackageWithSessions extends Package {
 }
 
 export interface StudentDetail extends Student {
+  parents: Parent
   packages: PackageWithSessions[]
   slots: Slot | null
 }
 
 export interface AlertWithStudent extends Alert {
-  students: Pick<Student, 'full_name' | 'parent_phone'> & {
+  students: Pick<Student, 'full_name'> & {
+    parents: Pick<Parent, 'full_name' | 'phone'>
     packages: Pick<Package, 'used_sessions' | 'total_sessions' | 'status'>[]
   }
 }

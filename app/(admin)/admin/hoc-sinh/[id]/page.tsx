@@ -18,7 +18,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   const { data: student } = await supabase
     .from('students')
-    .select('*, slots(name, time_start, time_end)')
+    .select('*, parents(full_name, phone, phone_2), slots(name, time_start, time_end)')
     .eq('id', params.id)
     .single()
 
@@ -59,16 +59,16 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Phụ huynh</span>
-                <span>{student.parent_name}</span>
+                <span>{student.parents?.full_name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">SĐT</span>
-                <span>{student.parent_phone}</span>
+                <span>{student.parents?.phone}</span>
               </div>
-              {student.parent_phone_2 && (
+              {student.parents?.phone_2 && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">SĐT 2</span>
-                  <span>{student.parent_phone_2}</span>
+                  <span>{student.parents.phone_2}</span>
                 </div>
               )}
               <div className="flex justify-between">

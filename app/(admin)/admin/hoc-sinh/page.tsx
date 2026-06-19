@@ -5,7 +5,7 @@ import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import type { Student, Slot } from '@/lib/types/database'
+import type { Student, Parent, Slot } from '@/lib/types/database'
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Đang học',
@@ -28,7 +28,7 @@ export default async function HocSinhPage({ searchParams }: Props) {
 
   let query = supabase
     .from('students')
-    .select('*, slots(name)')
+    .select('*, parents(full_name, phone), slots(name)')
     .order('full_name')
 
   if (status) query = query.eq('status', status)
@@ -96,14 +96,14 @@ export default async function HocSinhPage({ searchParams }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {(students ?? []).map((s: Student & { slots: { name: string } | null }) => (
+              {(students ?? []).map((s: Student & { parents: Pick<Parent, 'full_name' | 'phone'>; slots: { name: string } | null }) => (
                 <tr key={s.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-800">{s.full_name}</div>
                     {s.nickname && <div className="text-xs text-gray-400">"{s.nickname}"</div>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{s.parent_name}</td>
-                  <td className="px-4 py-3 text-gray-600">{s.parent_phone}</td>
+                  <td className="px-4 py-3 text-gray-600">{s.parents?.full_name}</td>
+                  <td className="px-4 py-3 text-gray-600">{s.parents?.phone}</td>
                   <td className="px-4 py-3 text-gray-600">{s.slots?.name ?? '—'}</td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[s.status]}>{STATUS_LABEL[s.status]}</Badge>
