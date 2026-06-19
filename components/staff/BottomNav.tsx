@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { Home, CheckSquare, CalendarDays } from 'lucide-react'
 
 const TABS = [
-  { href: '/staff', label: 'Trang chủ', icon: '🏠' },
-  { href: '/staff/diem-danh', label: 'Điểm danh', icon: '✅' },
-  { href: '/staff/lich-ca', label: 'Lịch ca', icon: '📅' },
+  { href: '/staff', label: 'Trang chủ', icon: Home },
+  { href: '/staff/diem-danh', label: 'Điểm danh', icon: CheckSquare },
+  { href: '/staff/lich-ca', label: 'Lịch ca', icon: CalendarDays },
 ]
 
 export default function BottomNav() {
@@ -20,17 +21,21 @@ export default function BottomNav() {
           tab.href === '/staff'
             ? pathname === '/staff'
             : pathname.startsWith(tab.href)
+        const Icon = tab.icon
         return (
           <Link
             key={tab.href}
             href={tab.href}
             className={cn(
-              'flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors',
-              isActive ? 'text-[#0D2545]' : 'text-gray-400'
+              'relative flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors',
+              isActive ? 'text-[#0D2545]' : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            <span className="text-xl">{tab.icon}</span>
-            <span className={cn('font-medium', isActive && 'text-[#C9A84C]')}>
+            {isActive && (
+              <span className="absolute left-4 right-4 top-0 h-0.5 rounded-b-full bg-[#C9A84C]" />
+            )}
+            <Icon className={cn('h-5 w-5', isActive ? 'text-[#0D2545]' : 'text-gray-400')} />
+            <span className={cn('font-medium', isActive ? 'text-[#C9A84C]' : '')}>
               {tab.label}
             </span>
           </Link>

@@ -19,15 +19,15 @@ export default async function StaffHomePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
-    .eq('id', user?.id ?? '')
+    .select('id, full_name')
+    .eq('auth_user_id', user?.id ?? '')
     .single()
 
-  // Slots của staff này
+  // Slots của staff này — dùng profiles.id, không phải auth user id
   const { data: slots } = await supabase
     .from('slots')
     .select('*')
-    .eq('assigned_staff_id', user?.id ?? '')
+    .eq('assigned_staff_id', profile?.id ?? '')
     .eq('is_active', true)
     .order('day_of_week')
 

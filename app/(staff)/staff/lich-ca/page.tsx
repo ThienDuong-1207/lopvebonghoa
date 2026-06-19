@@ -14,10 +14,16 @@ export default async function LichCaPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user?.id ?? '')
+    .single()
+
   const { data: slots } = await supabase
     .from('slots')
     .select('*')
-    .eq('assigned_staff_id', user?.id ?? '')
+    .eq('assigned_staff_id', profile?.id ?? '')
     .eq('is_active', true)
     .order('day_of_week')
     .order('time_start')

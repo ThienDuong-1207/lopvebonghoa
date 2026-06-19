@@ -17,11 +17,17 @@ export default async function DiemDanhPage() {
   const todayDow = today.getDay()
   const todayStr = today.toISOString().split('T')[0]
 
-  // Ca hôm nay của staff này
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user?.id ?? '')
+    .single()
+
+  // Ca hôm nay của staff này — dùng profiles.id, không phải auth user id
   const { data: slots } = await supabase
     .from('slots')
     .select('*')
-    .eq('assigned_staff_id', user?.id ?? '')
+    .eq('assigned_staff_id', profile?.id ?? '')
     .eq('day_of_week', todayDow)
     .eq('is_active', true)
 
