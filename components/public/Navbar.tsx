@@ -20,6 +20,9 @@ export default function Navbar() {
               Đăng ký học thử
             </Button>
           </Link>
+          <Link href="/auth/login" className="text-sm text-gray-500 hover:text-[#0D2545]">
+            Đăng nhập
+          </Link>
         </div>
       </div>
     </nav>
