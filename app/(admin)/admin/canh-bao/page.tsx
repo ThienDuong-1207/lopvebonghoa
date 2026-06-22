@@ -93,7 +93,7 @@ export default async function CanhBaoPage() {
         ) : (
           <>
             {renderGroup('Hết gói', packageEnded, String(packageEnded.length), 'red')}
-            {renderGroup('Sắp hết — còn 1 buổi', nearEnd, String(nearEnd.length), 'amber')}
+            {renderGroup('Sắp hết gói', nearEnd, String(nearEnd.length), 'amber')}
             {renderGroup('Nghỉ trên 14 ngày', inactive, String(inactive.length), 'gray')}
           </>
         )}
