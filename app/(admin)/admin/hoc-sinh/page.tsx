@@ -5,6 +5,7 @@ import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import ImportExportButtons from '@/components/admin/ImportExportButtons'
 import type { Student, Parent, Slot } from '@/lib/types/database'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -49,12 +50,12 @@ export default async function HocSinhPage({ searchParams }: Props) {
               name="q"
               defaultValue={q}
               placeholder="Tìm tên học sinh..."
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D2545]"
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D2545] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
             />
             <select
               name="status"
               defaultValue={status ?? ''}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="active">Đang học</option>
@@ -64,7 +65,7 @@ export default async function HocSinhPage({ searchParams }: Props) {
             <select
               name="slot"
               defaultValue={slot ?? ''}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
             >
               <option value="">Tất cả ca</option>
               {(slots ?? []).map((s: Pick<Slot, 'id' | 'name'>) => (
@@ -77,6 +78,7 @@ export default async function HocSinhPage({ searchParams }: Props) {
               Lọc
             </Button>
           </form>
+          <ImportExportButtons />
           <Link href="/admin/hoc-sinh/moi">
             <Button className="bg-[#0D2545] text-white hover:bg-[#0D2545]/90">+ Thêm học sinh</Button>
           </Link>
