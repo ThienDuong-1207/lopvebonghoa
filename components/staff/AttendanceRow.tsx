@@ -18,9 +18,10 @@ interface Props {
   classId: string
   sessionDate: string
   profileId: string
+  onStatusChange?: (prev: Status, next: Status) => void
 }
 
-export default function AttendanceRow({ student, pkg, session, classId, sessionDate, profileId }: Props) {
+export default function AttendanceRow({ student, pkg, session, classId, sessionDate, profileId, onStatusChange }: Props) {
   const initials = student.full_name.split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()
 
   const initStatus: Status = session?.status === 'makeup' ? 'present' : (session?.status as Status ?? null)
@@ -56,6 +57,7 @@ export default function AttendanceRow({ student, pkg, session, classId, sessionD
       }
       setStatus(next)
       setUsedSessions((u) => u + countable(next) - countable(prev))
+      onStatusChange?.(prev, next)
       if (next === 'present') toast.success('Có mặt ✓')
       else toast('Vắng', { icon: '✗' })
     } catch {

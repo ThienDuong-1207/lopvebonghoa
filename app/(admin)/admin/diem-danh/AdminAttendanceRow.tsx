@@ -4,6 +4,8 @@ import { useState } from 'react'
 import AdminCheckinButton from './AdminCheckinButton'
 import type { Student, Package, Session } from '@/lib/types/database'
 
+type FullStatus = 'present' | 'absent' | 'makeup' | null
+
 interface Props {
   student: Student
   pkg: Package
@@ -11,9 +13,10 @@ interface Props {
   classId: string
   sessionDate: string
   profileId: string
+  onStatusChange?: (prev: FullStatus, next: FullStatus) => void
 }
 
-export default function AdminAttendanceRow({ student, pkg, session, classId, sessionDate, profileId }: Props) {
+export default function AdminAttendanceRow({ student, pkg, session, classId, sessionDate, profileId, onStatusChange }: Props) {
   const [usedSessions, setUsedSessions] = useState(pkg.used_sessions)
   const initials = student.full_name.split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()
 
@@ -57,6 +60,7 @@ export default function AdminAttendanceRow({ student, pkg, session, classId, ses
         initialStatus={(session?.status as 'present' | 'absent' | 'makeup') ?? null}
         sessionId={session?.id}
         onCountChange={(delta) => setUsedSessions((u) => u + delta)}
+        onStatusChange={onStatusChange}
       />
     </div>
   )

@@ -5,18 +5,21 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Check, X, RotateCcw } from 'lucide-react'
 
+type FullStatus = 'present' | 'absent' | 'makeup' | null
+
 interface Props {
   studentId: string
   packageId: string
   classId: string
   sessionDate: string
   profileId: string
-  initialStatus: 'present' | 'absent' | 'makeup' | null
+  initialStatus: FullStatus
   sessionId?: string
   onCountChange?: (delta: number) => void
+  onStatusChange?: (prev: FullStatus, next: FullStatus) => void
 }
 
-const countable = (s: 'present' | 'absent' | 'makeup' | null) =>
+const countable = (s: FullStatus) =>
   s === 'present' || s === 'makeup' ? 1 : 0
 
 export default function AdminCheckinButton({
@@ -28,8 +31,9 @@ export default function AdminCheckinButton({
   initialStatus,
   sessionId: initialSessionId,
   onCountChange,
+  onStatusChange,
 }: Props) {
-  const [status, setStatus] = useState<'present' | 'absent' | 'makeup' | null>(initialStatus)
+  const [status, setStatus] = useState<FullStatus>(initialStatus)
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(initialSessionId)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
@@ -45,6 +49,7 @@ export default function AdminCheckinButton({
         setStatus(null)
         setCurrentSessionId(undefined)
         onCountChange?.(-countable(prev))
+        onStatusChange?.(prev, null)
         toast('Đã xóa điểm danh', { icon: '↩' })
       } else if (currentSessionId) {
         const { error } = await supabase
@@ -54,6 +59,7 @@ export default function AdminCheckinButton({
         if (error) throw error
         setStatus(newStatus)
         onCountChange?.(countable(newStatus) - countable(prev))
+        onStatusChange?.(prev, newStatus)
         toast.success('Đã cập nhật')
       } else {
         const { data, error } = await supabase
@@ -72,6 +78,7 @@ export default function AdminCheckinButton({
         setStatus(newStatus)
         setCurrentSessionId(data?.id)
         onCountChange?.(countable(newStatus) - countable(prev))
+        onStatusChange?.(prev, newStatus)
         toast.success(newStatus === 'present' ? 'Có mặt ✓' : newStatus === 'absent' ? 'Vắng mặt' : 'Học bù ↩')
       }
     } catch {

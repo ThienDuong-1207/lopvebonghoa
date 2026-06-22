@@ -4,12 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
 import Topbar from '@/components/admin/Topbar'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
-import { formatDays } from '@/lib/types/database'
-import AdminAttendanceRow from './AdminAttendanceRow'
+import AdminAttendanceSection from './AdminAttendanceSection'
 import DateClassPicker from './DateClassPicker'
 import MakeupSearchBox from './MakeupSearchBox'
-
-function formatTime(t: string) { return t.slice(0, 5) }
 
 interface Props {
   searchParams: { date?: string; class_id?: string }
@@ -70,8 +67,9 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
     }
   }
 
-  const presentCount = sessions.filter((s: Session) => s.status === 'present' && students.find((st) => st.id === s.student_id)).length
-  const absentCount  = sessions.filter((s: Session) => s.status === 'absent'  && students.find((st) => st.id === s.student_id)).length
+  const studentSet   = new Set(students.map((s) => s.id))
+  const presentCount = sessions.filter((s: Session) => (s.status === 'present' || s.status === 'makeup') && studentSet.has(s.student_id)).length
+  const absentCount  = sessions.filter((s: Session) => s.status === 'absent' && studentSet.has(s.student_id)).length
   const studentIds   = students.map((s) => s.id)
 
   return (
@@ -97,60 +95,17 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
           <div className="space-y-4">
 
             {/* ── Học sinh chính thức ── */}
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
-                <div>
-                  <h2 className="font-semibold text-gray-800 dark:text-gray-100">{selectedClass.name}</h2>
-                  <p className="text-xs text-gray-400">
-                    {selectedDate} · {formatDays(selectedClass.days_of_week)} · {formatTime(selectedClass.time_start)}–{formatTime(selectedClass.time_end)}
-                  </p>
-                </div>
-                <div className="flex gap-5 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-emerald-600">{presentCount}</div>
-                    <div className="text-xs text-gray-400">Có mặt</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-red-400">{absentCount}</div>
-                    <div className="text-xs text-gray-400">Vắng</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-gray-400">
-                      {students.length - presentCount - absentCount}
-                    </div>
-                    <div className="text-xs text-gray-400">Chưa</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {students.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-gray-400">Chưa có học sinh trong lớp này</div>
-                ) : students.map((student: Student) => {
-                  const pkg     = packages.find((p: Package) => p.student_id === student.id)
-                  const session = sessions.find((s: Session) => s.student_id === student.id)
-
-                  return pkg ? (
-                    <AdminAttendanceRow
-                      key={student.id}
-                      student={student}
-                      pkg={pkg}
-                      session={session}
-                      classId={selectedClassId}
-                      sessionDate={selectedDate}
-                      profileId={profile?.id ?? ''}
-                    />
-                  ) : (
-                    <div key={student.id} className="flex items-center justify-between px-5 py-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                        {student.nickname ?? student.full_name}
-                      </span>
-                      <span className="text-xs text-red-400">Chưa có gói học</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <AdminAttendanceSection
+              selectedClass={selectedClass}
+              selectedClassId={selectedClassId}
+              selectedDate={selectedDate}
+              students={students}
+              packages={packages}
+              sessions={sessions}
+              profileId={profile?.id ?? ''}
+              initPresentCount={presentCount}
+              initAbsentCount={absentCount}
+            />
 
             {/* ── Học bù — search & add ── */}
             <MakeupSearchBox

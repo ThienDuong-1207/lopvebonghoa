@@ -3,11 +3,9 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
 import Link from 'next/link'
-import AttendanceRow from '@/components/staff/AttendanceRow'
+import StaffAttendanceSection from '@/components/staff/StaffAttendanceSection'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, DAY_FULL } from '@/lib/types/database'
-
-function formatTime(t: string) { return t.slice(0, 5) }
 
 interface Props {
   searchParams: { dow?: string }
@@ -89,7 +87,6 @@ export default async function DiemDanhPage({ searchParams }: Props) {
   const totalCount   = eligibleStudents.length
   const presentCount = sessions.filter((s) => eligibleStudentIds.has(s.student_id) && (s.status === 'present' || s.status === 'makeup')).length
   const absentCount  = sessions.filter((s) => eligibleStudentIds.has(s.student_id) && s.status === 'absent').length
-  const pendingCount = totalCount - presentCount - absentCount
 
   return (
     <div className="p-4">
@@ -140,93 +137,24 @@ export default async function DiemDanhPage({ searchParams }: Props) {
         <p className="text-xs text-gray-400">{selectedDateStr}</p>
       </div>
 
-      {/* ── Stat bar ── */}
-      {totalCount > 0 && (
-        <div className="mb-3 grid grid-cols-4 gap-2">
-          <div className="rounded-xl bg-white px-3 py-2.5 text-center shadow-sm">
-            <div className="text-lg font-bold text-[#0D2545]">{totalCount}</div>
-            <div className="text-[11px] text-gray-400">Tổng</div>
-          </div>
-          <div className="rounded-xl bg-emerald-50 px-3 py-2.5 text-center shadow-sm">
-            <div className="text-lg font-bold text-emerald-600">{presentCount}</div>
-            <div className="text-[11px] text-emerald-500">Có mặt</div>
-          </div>
-          <div className="rounded-xl bg-red-50 px-3 py-2.5 text-center shadow-sm">
-            <div className="text-lg font-bold text-red-400">{absentCount}</div>
-            <div className="text-[11px] text-red-400">Vắng</div>
-          </div>
-          <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center shadow-sm">
-            <div className="text-lg font-bold text-gray-400">{pendingCount}</div>
-            <div className="text-[11px] text-gray-400">Chưa</div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Danh sách học sinh ── */}
+      {/* ── Stat bar + danh sách học sinh (client component để cập nhật real-time) ── */}
       {classesForDay.length === 0 ? (
         <div className="flex h-40 items-center justify-center rounded-xl bg-white text-sm text-gray-400 shadow-sm">
           Không có lớp vào {DAY_FULL[selectedDow]}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          {classesForDay.map((cls: Class, clsIdx) => {
-            const clsStudents = students.filter((s) => s.class_id === cls.id)
-            if (clsStudents.length === 0) return null
-
-            return (
-              <div key={cls.id}>
-                {/* Divider nhỏ giữa các lớp */}
-                {clsIdx > 0 && <div className="h-px bg-gray-100" />}
-
-                {/* Header lớp — chỉ hiện nếu có 2+ lớp trong ngày */}
-                {classesForDay.length > 1 && (
-                  <div className="flex items-center gap-2 bg-gray-50/70 px-4 py-2">
-                    <span className="text-xs font-semibold text-gray-500">{cls.name}</span>
-                    <span className="text-xs text-gray-400">
-                      {formatTime(cls.time_start)}–{formatTime(cls.time_end)}
-                    </span>
-                    {assignedIds.has(cls.id) && (
-                      <span className="rounded-full bg-[#0D2545] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                        Lớp của bạn
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Danh sách học sinh */}
-                <div className="divide-y divide-gray-100">
-                  {clsStudents.map((student: Student) => {
-                    const pkg     = packages.find((p) => p.student_id === student.id)
-                    const session = sessions.find((s) => s.student_id === student.id)
-
-                    return pkg ? (
-                      <AttendanceRow
-                        key={student.id}
-                        student={student}
-                        pkg={pkg}
-                        session={session}
-                        classId={cls.id}
-                        sessionDate={selectedDateStr}
-                        profileId={profile?.id ?? ''}
-                      />
-                    ) : (
-                      <div key={student.id} className="flex items-center justify-between px-4 py-3">
-                        <span className="text-sm text-gray-600">{student.nickname ?? student.full_name}</span>
-                        <span className="text-xs text-red-400">Hết gói</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-
-          {students.length === 0 && (
-            <div className="py-12 text-center text-sm text-gray-400">
-              Chưa có học sinh nào
-            </div>
-          )}
-        </div>
+        <StaffAttendanceSection
+          classesForDay={classesForDay}
+          students={students}
+          packages={packages}
+          sessions={sessions}
+          profileId={profile?.id ?? ''}
+          selectedDateStr={selectedDateStr}
+          assignedClassIds={Array.from(assignedIds)}
+          initPresentCount={presentCount}
+          initAbsentCount={absentCount}
+          totalCount={totalCount}
+        />
       )}
     </div>
   )
