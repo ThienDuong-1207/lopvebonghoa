@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Pencil, UserRound, Users } from 'lucide-react'
 import Link from 'next/link'
 import DeleteClassButton from '@/components/admin/DeleteClassButton'
+import Btn from '@/components/admin/Btn'
 import ClassCreateForm from '@/components/admin/ClassCreateForm'
 import type { Class } from '@/lib/types/database'
 import { DAY_SHORT } from '@/lib/types/database'
@@ -147,9 +148,7 @@ export default async function LichHocPage() {
 
                   <div className="flex items-center gap-1 shrink-0">
                     <form action={toggleClass.bind(null, cls.id, cls.is_active)}>
-                      <button className="rounded-lg px-2.5 py-1.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200">
-                        {cls.is_active ? 'Tắt' : 'Bật'}
-                      </button>
+                      <Btn type="submit" variant="outline" size="xs">{cls.is_active ? 'Tắt' : 'Bật'}</Btn>
                     </form>
                     <Link
                       href={`/admin/lich-hoc/${cls.id}`}

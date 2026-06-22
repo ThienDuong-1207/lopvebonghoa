@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { DAY_SHORT } from '@/lib/types/database'
+import Btn from '@/components/admin/Btn'
 
 interface ClassOption {
   id: string
@@ -84,16 +85,10 @@ export default function DateClassPicker({ classes, selectedDate, selectedClassId
         </select>
       </div>
 
-      <button
-        disabled={isPending}
-        onClick={() => navigate(date, classId)}
-        className="flex items-center gap-2 rounded-xl bg-[#0D2545] px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#0D2545]/90 disabled:opacity-60"
-      >
-        {isPending
-          ? <Loader2 className="h-4 w-4 animate-spin" />
-          : null}
+      <Btn disabled={isPending} onClick={() => navigate(date, classId)}>
+        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         {isPending ? 'Đang tải...' : 'Xem'}
-      </button>
+      </Btn>
     </div>
   )
 }

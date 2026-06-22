@@ -15,6 +15,7 @@ export default async function CanhBaoPage() {
       *,
       students (
         full_name,
+        classes ( days_of_week ),
         parents ( full_name, phone ),
         packages ( used_sessions, total_sessions, status, sessions ( session_date, status ) )
       )
@@ -37,6 +38,7 @@ export default async function CanhBaoPage() {
     resolved: boolean
     students: {
       full_name: string
+      classes: { days_of_week: number[] } | null
       parents: { full_name: string; phone: string } | null
       packages: {
         used_sessions: number
@@ -55,6 +57,19 @@ export default async function CanhBaoPage() {
       .map((s) => s.session_date)
       .sort()
     return attended.length > 0 ? attended[attended.length - 1] : null
+  }
+
+  function getNextSessionDate(lastDate: string | null, daysOfWeek: number[]): string | null {
+    if (!lastDate || daysOfWeek.length === 0) return null
+    const d = new Date(lastDate)
+    d.setDate(d.getDate() + 1)  // bắt đầu từ ngày hôm sau
+    for (let i = 0; i < 14; i++) {
+      if (daysOfWeek.includes(d.getDay())) {
+        return d.toISOString().split('T')[0]
+      }
+      d.setDate(d.getDate() + 1)
+    }
+    return null
   }
 
   function renderGroup(
@@ -76,6 +91,8 @@ export default async function CanhBaoPage() {
             const pkg = alert.students.packages.find((p) => p.status === 'active')
               ?? alert.students.packages.find((p) => p.status === 'completed')
             const lastSessionDate = getLastSessionDate(alert)
+            const daysOfWeek = alert.students.classes?.days_of_week ?? []
+            const nextSessionDate = getNextSessionDate(lastSessionDate, daysOfWeek)
             return (
               <AlertRow
                 key={alert.id}
@@ -88,6 +105,7 @@ export default async function CanhBaoPage() {
                 sessionsTotal={pkg?.total_sessions ?? 8}
                 sessionsLeft={pkg ? pkg.total_sessions - pkg.used_sessions : 0}
                 lastSessionDate={lastSessionDate}
+                nextSessionDate={nextSessionDate}
                 zaloSentAt={alert.zalo_sent_at}
                 resolved={alert.resolved}
               />

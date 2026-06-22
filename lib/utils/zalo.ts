@@ -7,7 +7,8 @@ interface ZaloParams {
   sessionsUsed: number
   sessionsTotal: number
   sessionsLeft: number
-  lastSessionDate: string | null  // YYYY-MM-DD từ DB
+  lastSessionDate: string | null   // YYYY-MM-DD — buổi cuối cùng đã học
+  nextSessionDate: string | null   // YYYY-MM-DD — buổi đầu tiên sau khi hết gói
   alertType: AlertTemplate
 }
 
@@ -24,9 +25,9 @@ Nội dung ck: chỉ cần ghi tên bé thôi ạ`
 
 export function buildZaloContent(p: ZaloParams): string {
   if (p.alertType === 'package_ended') {
-    return `Dạ chị ơi, bé ${p.childName} đã học hết số buổi của tháng cũ vào ngày "${formatDate(p.lastSessionDate)}" và bắt buổi đầu tiên của tháng mới vào ngày "___/___/______", phụ huynh cho em thu học phí tháng mới của bé ạ.
+    return `Dạ chị ơi, bé ${p.childName} đã học hết số buổi của tháng cũ vào ngày ${formatDate(p.lastSessionDate)} và bắt buổi đầu tiên của tháng mới vào ngày ${formatDate(p.nextSessionDate)}, phụ huynh cho em thu học phí tháng mới của bé ạ.
 
-Phụ huynh tiếp tục đăng kí cho bé có thể gửi học phí vào STK sau giúp em chị nhen:
+Phụ huynh tiếp tục đăng kí cho bé có thể gửi học phí vào STK sau:
 ${BANK_INFO}
 Em cảm ơn chị nhiều`
   }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
+import Btn from '@/components/admin/Btn'
 
 interface Props {
   studentId: string
@@ -22,51 +23,31 @@ export default function DeleteStudentButton({ studentId, studentName, packageCou
   async function handleDelete() {
     setLoading(true)
     try {
-      // 1. Xóa tất cả sessions của học sinh này
-      const { error: sessErr } = await supabase
-        .from('sessions')
-        .delete()
-        .eq('student_id', studentId)
+      const { error: sessErr } = await supabase.from('sessions').delete().eq('student_id', studentId)
       if (sessErr) throw sessErr
 
-      // 2. Xóa alerts
-      const { error: alertErr } = await supabase
-        .from('alerts')
-        .delete()
-        .eq('student_id', studentId)
+      const { error: alertErr } = await supabase.from('alerts').delete().eq('student_id', studentId)
       if (alertErr) throw alertErr
 
-      // 3. Xóa packages
-      const { error: pkgErr } = await supabase
-        .from('packages')
-        .delete()
-        .eq('student_id', studentId)
+      const { error: pkgErr } = await supabase.from('packages').delete().eq('student_id', studentId)
       if (pkgErr) throw pkgErr
 
-      // 4. Xóa student (parent giữ lại vì có thể dùng chung)
-      const { error: stuErr } = await supabase
-        .from('students')
-        .delete()
-        .eq('id', studentId)
+      const { error: stuErr } = await supabase.from('students').delete().eq('id', studentId)
       if (stuErr) throw stuErr
 
       toast.success('Đã xóa học sinh')
       router.push('/admin/hoc-sinh')
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Lỗi không xác định'
-      toast.error(`Không thể xóa: ${msg}`)
+      toast.error(`Không thể xóa: ${e instanceof Error ? e.message : 'Lỗi không xác định'}`)
       setLoading(false)
     }
   }
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-      >
+      <Btn variant="danger" size="xs" onClick={() => setOpen(true)}>
         <Trash2 className="h-3.5 w-3.5" /> Xóa
-      </button>
+      </Btn>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -75,9 +56,7 @@ export default function DeleteStudentButton({ studentId, studentName, packageCou
               <h3 className="font-semibold text-gray-800 dark:text-gray-100">Xóa học sinh</h3>
             </div>
             <div className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-              <p>
-                Bạn sắp xóa <strong className="text-gray-800 dark:text-gray-100">{studentName}</strong>.
-              </p>
+              <p>Bạn sắp xóa <strong className="text-gray-800 dark:text-gray-100">{studentName}</strong>.</p>
               {(packageCount > 0 || sessionCount > 0) && (
                 <div className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-400">
                   <p className="font-semibold">Dữ liệu sẽ bị xóa vĩnh viễn:</p>
@@ -88,26 +67,14 @@ export default function DeleteStudentButton({ studentId, studentName, packageCou
                   </ul>
                 </div>
               )}
-              <p className="mt-3 text-xs text-gray-400">
-                Thông tin phụ huynh sẽ được giữ lại.
-              </p>
+              <p className="mt-3 text-xs text-gray-400">Thông tin phụ huynh sẽ được giữ lại.</p>
             </div>
             <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3 dark:border-gray-700">
-              <button
-                onClick={() => setOpen(false)}
-                disabled={loading}
-                className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={loading}
-                className="flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60"
-              >
+              <Btn variant="outline" size="sm" onClick={() => setOpen(false)} disabled={loading}>Hủy</Btn>
+              <Btn variant="danger" size="sm" onClick={handleDelete} disabled={loading}>
                 <Trash2 className="h-3.5 w-3.5" />
                 {loading ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
-              </button>
+              </Btn>
             </div>
           </div>
         </div>

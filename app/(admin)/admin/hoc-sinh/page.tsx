@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import ImportExportButtons from '@/components/admin/ImportExportButtons'
+import Btn, { btnCls } from '@/components/admin/Btn'
 import type { Student, Parent, Class } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
 
@@ -74,12 +74,10 @@ export default async function HocSinhPage({ searchParams }: Props) {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <Button type="submit" variant="outline" className="text-sm">Lọc</Button>
+            <Btn type="submit" variant="outline" size="sm">Lọc</Btn>
           </form>
           <ImportExportButtons />
-          <Link href="/admin/hoc-sinh/moi">
-            <Button className="bg-[#0D2545] text-white hover:bg-[#0D2545]/90">+ Thêm học sinh</Button>
-          </Link>
+          <Link href="/admin/hoc-sinh/moi" className={btnCls('primary')}>+ Thêm học sinh</Link>
         </div>
 
         {/* Table */}
@@ -125,8 +123,8 @@ export default async function HocSinhPage({ searchParams }: Props) {
                     <Badge variant={STATUS_VARIANT[s.status]}>{STATUS_LABEL[s.status]}</Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/admin/hoc-sinh/${s.id}`}>
-                      <Button variant="ghost" className="text-xs">Chi tiết →</Button>
+                    <Link href={`/admin/hoc-sinh/${s.id}`} className="text-xs text-gray-500 hover:text-[#0D2545]">
+                      Chi tiết →
                     </Link>
                   </td>
                 </tr>

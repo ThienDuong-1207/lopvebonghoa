@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { buildZaloContent, openZalo } from '@/lib/utils/zalo'
 import type { AlertType } from '@/lib/types/database'
+import Btn from '@/components/admin/Btn'
 
 interface Props {
   alertId: string
@@ -15,6 +16,7 @@ interface Props {
   sessionsTotal: number
   sessionsLeft: number
   lastSessionDate: string | null
+  nextSessionDate: string | null
   zaloSentAt: string | null
   resolved: boolean
 }
@@ -42,6 +44,7 @@ export default function AlertRow({
   sessionsTotal,
   sessionsLeft,
   lastSessionDate,
+  nextSessionDate,
   zaloSentAt,
   resolved,
 }: Props) {
@@ -57,6 +60,7 @@ export default function AlertRow({
     sessionsTotal,
     sessionsLeft,
     lastSessionDate,
+    nextSessionDate,
     alertType: type as 'package_ended' | 'near_end' | 'inactive',
   })
 
@@ -96,40 +100,21 @@ export default function AlertRow({
 
       <div className="flex shrink-0 flex-col gap-2">
         {confirming ? (
-          /* Bước xác nhận: admin vừa mở Zalo, hỏi đã gửi chưa */
           <div className="flex flex-col gap-1.5">
             <p className="text-center text-[11px] text-gray-400">Đã gửi chưa?</p>
-            <button
-              onClick={handleConfirmSent}
-              className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600"
-            >
-              ✓ Đã gửi
-            </button>
-            <button
-              onClick={handleCancelConfirm}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50"
-            >
-              Hủy
-            </button>
+            <Btn size="xs" variant="success" onClick={handleConfirmSent}>✓ Đã gửi</Btn>
+            <Btn size="xs" variant="outline" onClick={handleCancelConfirm}>Hủy</Btn>
           </div>
         ) : (
-          <button
+          <Btn
+            size="xs"
             onClick={handleZalo}
-            className={`rounded-lg px-3 py-1.5 text-xs text-white ${
-              sent
-                ? 'bg-blue-300 hover:bg-blue-400'
-                : 'bg-blue-500 hover:bg-blue-600'
-            }`}
+            className={sent ? 'bg-blue-300 hover:bg-blue-400' : 'bg-blue-500 hover:bg-blue-600'}
           >
             {sent ? '📱 Gửi lại' : '📱 Zalo'}
-          </button>
+          </Btn>
         )}
-        <button
-          onClick={handleResolve}
-          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
-        >
-          ✓ Xong
-        </button>
+        <Btn size="xs" variant="outline" onClick={handleResolve}>✓ Xong</Btn>
       </div>
     </div>
   )

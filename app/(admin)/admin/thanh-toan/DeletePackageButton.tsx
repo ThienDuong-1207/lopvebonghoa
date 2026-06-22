@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import Btn from '@/components/admin/Btn'
 
 interface Props {
   packageId: string
@@ -14,14 +15,7 @@ interface Props {
   paymentStatus: 'paid' | 'pending'
 }
 
-export default function DeletePackageButton({
-  packageId,
-  studentId,
-  studentName,
-  sessionCount,
-  amountPaid,
-  paymentStatus,
-}: Props) {
+export default function DeletePackageButton({ packageId, studentId, studentName, sessionCount, amountPaid, paymentStatus }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
@@ -29,47 +23,31 @@ export default function DeletePackageButton({
   async function handleDelete() {
     setLoading(true)
     try {
-      // 1. Xóa tất cả sessions của gói này
-      const { error: sessErr } = await supabase
-        .from('sessions')
-        .delete()
-        .eq('package_id', packageId)
+      const { error: sessErr } = await supabase.from('sessions').delete().eq('package_id', packageId)
       if (sessErr) throw sessErr
 
-      // 2. Xóa alerts chưa xử lý liên quan đến package (near_end, package_ended)
-      await supabase
-        .from('alerts')
-        .delete()
+      await supabase.from('alerts').delete()
         .eq('student_id', studentId)
         .in('type', ['near_end', 'package_ended'])
         .eq('resolved', false)
 
-      // 3. Xóa package
-      const { error: pkgErr } = await supabase
-        .from('packages')
-        .delete()
-        .eq('id', packageId)
+      const { error: pkgErr } = await supabase.from('packages').delete().eq('id', packageId)
       if (pkgErr) throw pkgErr
 
       toast.success('Đã xóa gói học và toàn bộ dữ liệu liên quan')
       setOpen(false)
       window.location.reload()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Lỗi không xác định'
-      toast.error(`Xóa thất bại: ${msg}`)
+      toast.error(`Xóa thất bại: ${e instanceof Error ? e.message : 'Lỗi không xác định'}`)
     }
     setLoading(false)
   }
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        title="Xóa gói học"
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-      >
+      <Btn variant="danger" size="icon-sm" title="Xóa gói học" onClick={() => setOpen(true)}>
         <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      </Btn>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -99,20 +77,12 @@ export default function DeletePackageButton({
             </ul>
             <p className="mb-5 text-xs text-gray-400">Hành động này không thể hoàn tác.</p>
             <div className="flex gap-2">
-              <button
-                onClick={handleDelete}
-                disabled={loading}
-                className="flex-1 rounded-lg bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
-              >
+              <Btn variant="danger" className="flex-1" onClick={handleDelete} disabled={loading}>
                 {loading ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
-              </button>
-              <button
-                onClick={() => setOpen(false)}
-                disabled={loading}
-                className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
-              >
+              </Btn>
+              <Btn variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={loading}>
                 Hủy
-              </button>
+              </Btn>
             </div>
           </div>
         </div>
