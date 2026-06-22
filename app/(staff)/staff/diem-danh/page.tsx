@@ -2,162 +2,214 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import CheckinButton from '@/components/staff/CheckinButton'
-import MakeupCheckin from '@/components/staff/MakeupCheckin'
-import type { MakeupStudent } from '@/components/staff/MakeupCheckin'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
-import { formatDays } from '@/lib/types/database'
+import { DAY_SHORT, DAY_FULL } from '@/lib/types/database'
 
 function formatTime(t: string) { return t.slice(0, 5) }
 
-export default async function DiemDanhPage() {
+interface Props {
+  searchParams: { dow?: string; class_id?: string }
+}
+
+export default async function DiemDanhPage({ searchParams }: Props) {
   const supabase = createClient()
   const profile = await getProfile()
 
   const today = new Date()
   const todayDow = today.getDay()
-  const todayStr = today.toISOString().split('T')[0]
+  const selectedDow = searchParams.dow !== undefined ? Number(searchParams.dow) : todayDow
+  const selectedClassId = searchParams.class_id ?? ''
 
-  // Lấy lớp hôm nay của trợ giảng: days_of_week chứa todayDow
-  const { data: classes } = await supabase
+  // Tính ngày thực tế của DOW được chọn trong tuần hiện tại
+  const d = new Date(today)
+  d.setDate(today.getDate() + (selectedDow - todayDow))
+  const selectedDateStr = d.toISOString().split('T')[0]
+
+  // Lấy tất cả lớp active
+  const { data: rawClasses } = await supabase
     .from('classes')
     .select('*')
-    .eq('assigned_staff_id', profile?.id ?? '')
-    .contains('days_of_week', [todayDow])
     .eq('is_active', true)
+    .order('time_start')
+    .order('name')
 
-  if (!classes || classes.length === 0) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center p-4 text-center text-gray-400">
-        <div>
-          <div className="text-4xl">📭</div>
-          <p className="mt-3">Không có lớp hôm nay</p>
-          <p className="mt-1 text-xs">({formatDays([todayDow])})</p>
-        </div>
-      </div>
-    )
-  }
-
-  const classIds = classes.map((c: Class) => c.id)
-
-  const [{ data: students }, { data: todaySessions }] = await Promise.all([
-    supabase.from('students').select('*').in('class_id', classIds).eq('status', 'active'),
-    supabase.from('sessions').select('*').in('class_id', classIds).eq('session_date', todayStr),
-  ])
-
-  const studentIds = (students ?? []).map((s: Student) => s.id)
-
-  // Parallel: gói của học sinh hôm nay + học sinh học bù (không trong lớp hôm nay)
-  const packagesQuery = studentIds.length
-    ? supabase.from('packages').select('*').in('student_id', studentIds).eq('status', 'active')
-    : Promise.resolve({ data: [] })
-
-  let makeupStudentsQuery = supabase
-    .from('students')
-    .select('id, full_name, nickname, class_id')
-    .eq('status', 'active')
-  if (studentIds.length > 0) {
-    makeupStudentsQuery = makeupStudentsQuery.not('id', 'in', `(${studentIds.join(',')})`)
-  }
-
-  const [{ data: packages }, { data: makeupRaw }] = await Promise.all([
-    packagesQuery,
-    makeupStudentsQuery,
-  ])
-
-  const makeupIds = (makeupRaw ?? []).map((s: { id: string }) => s.id)
-  const [{ data: makeupPackages }, { data: makeupSessionsToday }] = await (
-    makeupIds.length
-      ? Promise.all([
-          supabase.from('packages').select('id, student_id, used_sessions, total_sessions').in('student_id', makeupIds).eq('status', 'active'),
-          supabase.from('sessions').select('student_id').in('student_id', makeupIds).eq('session_date', todayStr).eq('status', 'makeup'),
-        ])
-      : Promise.resolve([{ data: [] }, { data: [] }])
+  const allClasses: Class[] = rawClasses ?? []
+  const classesForDay = allClasses.filter((c) => c.days_of_week.includes(selectedDow))
+  const selectedClass = allClasses.find((c) => c.id === selectedClassId) ?? null
+  const daysWithClass = new Set(allClasses.flatMap((c) => c.days_of_week))
+  const assignedIds = new Set(
+    allClasses.filter((c) => c.assigned_staff_id === profile?.id).map((c) => c.id)
   )
 
-  const alreadyMadeUp = new Set((makeupSessionsToday ?? []).map((s: { student_id: string }) => s.student_id))
+  // Fetch học sinh + sessions khi đã chọn lớp
+  let students: Student[] = []
+  let packages: Package[] = []
+  let sessions: Session[] = []
 
-  const makeupCandidates: MakeupStudent[] = (makeupRaw ?? [])
-    .map((s: { id: string; full_name: string; nickname: string | null; class_id: string | null }) => {
-      const pkg = (makeupPackages ?? []).find((p: { student_id: string }) => p.student_id === s.id)
-      if (!pkg) return null
-      return {
-        id:            s.id,
-        full_name:     s.full_name,
-        nickname:      s.nickname,
-        class_id:      s.class_id,
-        package_id:    pkg.id,
-        used_sessions: pkg.used_sessions,
-        total_sessions: pkg.total_sessions,
-        alreadyDone:   alreadyMadeUp.has(s.id),
-      }
-    })
-    .filter(Boolean) as MakeupStudent[]
+  if (selectedClassId && selectedClass) {
+    const [studentsRes, sessionsRes] = await Promise.all([
+      supabase
+        .from('students')
+        .select('*')
+        .eq('class_id', selectedClassId)
+        .eq('status', 'active')
+        .lte('enrolled_at', selectedDateStr)
+        .order('full_name'),
+      supabase
+        .from('sessions')
+        .select('*')
+        .eq('class_id', selectedClassId)
+        .eq('session_date', selectedDateStr),
+    ])
 
-  const checkedIn = (todaySessions ?? []).filter((s: Session) => s.status === 'present').length
-  const absent    = (todaySessions ?? []).filter((s: Session) => s.status === 'absent').length
-  const total     = (students ?? []).length
+    students = studentsRes.data ?? []
+    sessions = sessionsRes.data ?? []
+
+    if (students.length > 0) {
+      const ids = students.map((s) => s.id)
+      const { data: pkgs } = await supabase
+        .from('packages')
+        .select('*')
+        .in('student_id', ids)
+        .eq('status', 'active')
+      packages = pkgs ?? []
+    }
+  }
+
+  const presentCount = sessions.filter((s) => s.status === 'present').length
+  const absentCount  = sessions.filter((s) => s.status === 'absent').length
 
   return (
     <div className="p-4">
-      {/* Header tóm tắt */}
-      <div className="mb-4 flex gap-3">
-        <div className="flex-1 rounded-xl bg-green-50 py-3 text-center">
-          <div className="text-xl font-bold text-green-600">{checkedIn}</div>
-          <div className="text-xs text-gray-500">Có mặt</div>
-        </div>
-        <div className="flex-1 rounded-xl bg-red-50 py-3 text-center">
-          <div className="text-xl font-bold text-red-400">{absent}</div>
-          <div className="text-xs text-gray-500">Vắng</div>
-        </div>
-        <div className="flex-1 rounded-xl bg-gray-50 py-3 text-center">
-          <div className="text-xl font-bold text-gray-600">{total - checkedIn - absent}</div>
-          <div className="text-xs text-gray-500">Chưa</div>
-        </div>
+
+      {/* ── Tabs ngày trong tuần ── */}
+      <div className="mb-5 grid grid-cols-7 gap-1.5">
+        {[1, 2, 3, 4, 5, 6, 0].map((dow) => {
+          const hasClass  = daysWithClass.has(dow)
+          const isToday   = dow === todayDow
+          const isSelected = dow === selectedDow
+
+          return (
+            <Link
+              key={dow}
+              href={`/staff/diem-danh?dow=${dow}`}
+              className={`rounded-xl py-2.5 text-center text-xs font-medium shadow-sm transition-colors ${
+                isSelected && isToday
+                  ? 'bg-[#0D2545] text-white ring-2 ring-[#C9A84C]'
+                  : isSelected
+                  ? 'bg-[#C9A84C] text-white'
+                  : isToday
+                  ? 'bg-[#0D2545] text-white'
+                  : hasClass
+                  ? 'bg-[#C9A84C]/15 text-[#C9A84C] hover:bg-[#C9A84C]/25'
+                  : 'bg-white text-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div>{DAY_SHORT[dow]}</div>
+              {hasClass && (
+                <div className={`mx-auto mt-1 h-1 w-1 rounded-full ${
+                  isSelected ? 'bg-white/70' : 'bg-[#C9A84C]'
+                }`} />
+              )}
+            </Link>
+          )
+        })}
       </div>
 
-      {classes.map((cls: Class) => {
-        const classStudents = (students ?? []).filter(
-          (s: Student) => s.class_id === cls.id
-        )
+      {/* ── Header ── */}
+      <div className="mb-3 flex items-center justify-between">
+        {selectedClassId && selectedClass ? (
+          <Link
+            href={`/staff/diem-danh?dow=${selectedDow}`}
+            className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-700"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {DAY_FULL[selectedDow]} · {selectedDateStr}
+          </Link>
+        ) : (
+          <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+            {DAY_FULL[selectedDow]}
+            {selectedDow === todayDow && (
+              <span className="ml-2 rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
+                Hôm nay
+              </span>
+            )}
+          </h2>
+        )}
 
-        return (
-          <div key={cls.id} className="mb-6">
-            <h3 className="mb-1 font-semibold text-[#0D2545]">
-              {cls.name} — {formatTime(cls.time_start)}–{formatTime(cls.time_end)}
-            </h3>
-            <p className="mb-3 text-xs text-gray-400">{formatDays(cls.days_of_week)}</p>
+        {selectedClassId && selectedClass ? (
+          <div className="flex gap-4 text-center">
+            <div>
+              <div className="text-base font-bold text-emerald-600">{presentCount}</div>
+              <div className="text-[11px] text-gray-400">Có mặt</div>
+            </div>
+            <div>
+              <div className="text-base font-bold text-red-400">{absentCount}</div>
+              <div className="text-[11px] text-gray-400">Vắng</div>
+            </div>
+            <div>
+              <div className="text-base font-bold text-gray-400">
+                {students.length - presentCount - absentCount}
+              </div>
+              <div className="text-[11px] text-gray-400">Chưa</div>
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400">{classesForDay.length} lớp</span>
+        )}
+      </div>
 
-            <div className="space-y-3">
-              {classStudents.map((student: Student) => {
-                const pkg = (packages ?? []).find((p: Package) => p.student_id === student.id)
-                const session = (todaySessions ?? []).find(
-                  (s: Session) => s.student_id === student.id && s.class_id === cls.id
-                )
+      {/* ── Nội dung chính ── */}
+      {selectedClassId && selectedClass ? (
+
+        /* Danh sách học viên để điểm danh */
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div className="border-b border-gray-100 bg-gray-50/60 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#0D2545]">{selectedClass.name}</span>
+              {assignedIds.has(selectedClass.id) && (
+                <span className="rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
+                  Lớp của bạn
+                </span>
+              )}
+            </div>
+            <div className="mt-0.5 text-xs text-gray-400">
+              {formatTime(selectedClass.time_start)}–{formatTime(selectedClass.time_end)}
+            </div>
+          </div>
+
+          <div className="divide-y divide-gray-100">
+            {students.length === 0 ? (
+              <div className="py-12 text-center text-sm text-gray-400">
+                Chưa có học sinh nào
+              </div>
+            ) : (
+              students.map((student: Student) => {
+                const pkg     = packages.find((p) => p.student_id === student.id)
+                const session = sessions.find((s) => s.student_id === student.id)
                 const initials = student.full_name
-                  .split(' ')
-                  .map((w: string) => w[0])
-                  .slice(-2)
-                  .join('')
-                  .toUpperCase()
+                  .split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()
 
                 return (
                   <div
                     key={student.id}
-                    className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm"
+                    className="flex items-center justify-between px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-[#0D2545]/10 text-sm font-semibold text-[#0D2545]">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0D2545]/10 text-sm font-semibold text-[#0D2545]">
+                        {initials}
+                      </div>
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-gray-800">
                             {student.nickname ?? student.full_name}
                           </span>
+                          {student.nickname && (
+                            <span className="text-xs text-gray-400">({student.full_name})</span>
+                          )}
                           {pkg?.payment_status === 'pending' && (
                             <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
                               Chờ thu
@@ -171,14 +223,18 @@ export default async function DiemDanhPage() {
                         )}
                       </div>
                     </div>
+
                     {pkg ? (
                       <CheckinButton
                         studentId={student.id}
                         packageId={pkg.id}
-                        classId={cls.id}
-                        sessionDate={todayStr}
+                        classId={selectedClassId}
+                        sessionDate={selectedDateStr}
                         profileId={profile?.id ?? ''}
-                        initialStatus={session?.status ?? null}
+                        initialStatus={
+                          session?.status === 'makeup' ? 'present'
+                          : (session?.status ?? null)
+                        }
                         sessionId={session?.id}
                       />
                     ) : (
@@ -186,24 +242,49 @@ export default async function DiemDanhPage() {
                     )}
                   </div>
                 )
-              })}
-
-              {classStudents.length === 0 && (
-                <div className="rounded-xl bg-white py-6 text-center text-sm text-gray-400">
-                  Chưa có học sinh trong lớp này
-                </div>
-              )}
-            </div>
+              })
+            )}
           </div>
-        )
-      })}
+        </div>
 
-      <MakeupCheckin
-        students={makeupCandidates}
-        sessionDate={todayStr}
-        profileId={profile?.id ?? ''}
-        hostClassId={classIds[0] ?? ''}
-      />
+      ) : classesForDay.length === 0 ? (
+
+        /* Không có lớp ngày này */
+        <div className="flex h-40 items-center justify-center rounded-xl bg-white text-center text-gray-400 shadow-sm">
+          <p className="text-sm">Không có lớp vào {DAY_FULL[selectedDow]}</p>
+        </div>
+
+      ) : (
+
+        /* Danh sách lớp của ngày được chọn */
+        <div className="space-y-3">
+          {classesForDay.map((cls: Class) => (
+            <Link
+              key={cls.id}
+              href={`/staff/diem-danh?dow=${selectedDow}&class_id=${cls.id}`}
+              className={`flex items-center justify-between rounded-xl bg-white p-4 shadow-sm transition-colors hover:bg-gray-50 ${
+                assignedIds.has(cls.id) ? 'border-l-4 border-[#C9A84C]' : ''
+              }`}
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-[#0D2545]">{cls.name}</span>
+                  {assignedIds.has(cls.id) && (
+                    <span className="rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
+                      Lớp của bạn
+                    </span>
+                  )}
+                </div>
+                <div className="mt-0.5 text-sm text-gray-400">
+                  {formatTime(cls.time_start)} – {formatTime(cls.time_end)}
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-300" />
+            </Link>
+          ))}
+        </div>
+
+      )}
     </div>
   )
 }
