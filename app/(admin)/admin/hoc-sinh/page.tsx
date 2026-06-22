@@ -36,8 +36,10 @@ export default async function HocSinhPage({ searchParams }: Props) {
   if (slot) query = query.eq('preferred_slot_id', slot)
   if (q) query = query.ilike('full_name', `%${q}%`)
 
-  const { data: students } = await query
-  const { data: slots } = await supabase.from('slots').select('id, name').eq('is_active', true)
+  const [{ data: students }, { data: slots }] = await Promise.all([
+    query,
+    supabase.from('slots').select('id, name').eq('is_active', true),
+  ])
 
   return (
     <>
@@ -85,9 +87,9 @@ export default async function HocSinhPage({ searchParams }: Props) {
         </div>
 
         {/* Table */}
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Học sinh</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Phụ huynh</th>
@@ -97,24 +99,22 @@ export default async function HocSinhPage({ searchParams }: Props) {
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {(students ?? []).map((s: Student & { parents: Pick<Parent, 'full_name' | 'phone'>; slots: { name: string } | null }) => (
-                <tr key={s.id} className="hover:bg-gray-50">
+                <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-800">{s.full_name}</div>
+                    <div className="font-medium text-gray-800 dark:text-gray-100">{s.full_name}</div>
                     {s.nickname && <div className="text-xs text-gray-400">"{s.nickname}"</div>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{s.parents?.full_name}</td>
-                  <td className="px-4 py-3 text-gray-600">{s.parents?.phone}</td>
-                  <td className="px-4 py-3 text-gray-600">{s.slots?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.parents?.full_name}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.parents?.phone}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.slots?.name ?? '—'}</td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[s.status]}>{STATUS_LABEL[s.status]}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/hoc-sinh/${s.id}`}>
-                      <Button variant="ghost" className="text-xs">
-                        Chi tiết →
-                      </Button>
+                      <Button variant="ghost" className="text-xs">Chi tiết →</Button>
                     </Link>
                   </td>
                 </tr>

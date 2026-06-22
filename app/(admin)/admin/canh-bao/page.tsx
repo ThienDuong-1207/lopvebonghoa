@@ -43,7 +43,7 @@ export default async function CanhBaoPage() {
       <div className="mb-8">
         <div className="mb-3 flex items-center gap-2">
           <span className={`h-2.5 w-2.5 rounded-full ${dotColor[color]}`} />
-          <h3 className="font-semibold text-gray-700">{title}</h3>
+          <h3 className="font-semibold text-gray-700 dark:text-gray-200">{title}</h3>
           {badge && <Badge variant="destructive">{badge}</Badge>}
         </div>
         <div className="space-y-3">

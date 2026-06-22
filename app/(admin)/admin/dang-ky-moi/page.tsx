@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import type { Registration } from '@/lib/types/database'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -18,52 +20,97 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'dest
   converted: 'secondary',
   rejected: 'outline',
 }
+const TABS = [
+  { key: '', label: 'Tất cả' },
+  { key: 'pending', label: 'Chờ xử lý' },
+  { key: 'contacted', label: 'Đã liên hệ' },
+  { key: 'converted', label: 'Đã vào học' },
+  { key: 'rejected', label: 'Từ chối' },
+]
 
 async function updateStatus(id: string, status: string) {
   'use server'
   const supabase = createClient()
   await supabase.from('registrations').update({ status }).eq('id', id)
+  redirect('/admin/dang-ky-moi')
 }
 
-export default async function DangKyMoiPage() {
-  const supabase = createClient()
-  const { data: registrations } = await supabase
-    .from('registrations')
-    .select('*')
-    .order('submitted_at', { ascending: false })
+interface Props { searchParams: { filter?: string } }
 
-  const pending = (registrations ?? []).filter((r: Registration) => r.status === 'pending')
+export default async function DangKyMoiPage({ searchParams }: Props) {
+  const supabase = createClient()
+  const filter = searchParams.filter ?? ''
+
+  let query = supabase.from('registrations').select('*').order('submitted_at', { ascending: false })
+  if (filter) query = query.eq('status', filter)
+
+  const [{ data: registrations }, { data: allForCount }] = await Promise.all([
+    query,
+    supabase.from('registrations').select('status'),
+  ])
+
+  const countByStatus = (status: string) =>
+    (allForCount ?? []).filter((r: { status: string }) => r.status === status).length
+  const pendingCount = countByStatus('pending')
 
   return (
     <>
       <Topbar title="Đăng ký mới" />
       <div className="p-6">
+        {/* Header + count */}
         <div className="mb-4 flex items-center gap-3">
-          <h2 className="font-semibold">Danh sách đơn đăng ký</h2>
-          {pending.length > 0 && (
-            <Badge variant="destructive">{pending.length} chờ xử lý</Badge>
+          <h2 className="font-semibold dark:text-gray-100">Danh sách đơn đăng ký</h2>
+          {pendingCount > 0 && (
+            <Badge variant="destructive">{pendingCount} chờ xử lý</Badge>
           )}
         </div>
 
+        {/* Filter tabs */}
+        <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800/50">
+          {TABS.map((tab) => {
+            const isActive = filter === tab.key
+            const href = tab.key ? `/admin/dang-ky-moi?filter=${tab.key}` : '/admin/dang-ky-moi'
+            const count = tab.key ? countByStatus(tab.key) : (allForCount ?? []).length
+            return (
+              <Link
+                key={tab.key}
+                href={href}
+                className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-white text-[#0D2545] shadow-sm dark:bg-gray-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {tab.label}
+                <span className={`text-xs ${isActive ? 'text-[#C9A84C]' : 'text-gray-400'}`}>
+                  {count}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Cards */}
         <div className="space-y-4">
           {(registrations ?? []).map((r: Registration) => (
-            <Card key={r.id}>
+            <Card key={r.id} className="dark:border-gray-700 dark:bg-gray-800">
               <CardContent className="py-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{r.child_name}</span>
+                      <span className="font-semibold dark:text-gray-100">{r.child_name}</span>
                       {r.child_age && <span className="text-sm text-gray-400">{r.child_age} tuổi</span>}
                       <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      PH: {r.parent_name} — {r.phone}
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                      PH: {r.parent_name} —{' '}
+                      <a href={`tel:${r.phone}`} className="text-[#C9A84C] hover:underline">{r.phone}</a>
                     </div>
                     {r.preferred_slot && (
-                      <div className="text-sm text-gray-500">Ca mong muốn: {r.preferred_slot}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Ca mong muốn: {r.preferred_slot}</div>
                     )}
                     {r.message && (
-                      <div className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600">
+                      <div className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                         {r.message}
                       </div>
                     )}
@@ -72,28 +119,37 @@ export default async function DangKyMoiPage() {
                     </div>
                   </div>
 
-                  {r.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <form action={updateStatus.bind(null, r.id, 'contacted')}>
-                        <button className="rounded-lg bg-[#0D2545] px-3 py-1.5 text-xs text-white hover:bg-[#0D2545]/90">
-                          Đã liên hệ
+                  <div className="flex flex-col gap-2">
+                    {r.status === 'pending' && (
+                      <>
+                        <form action={updateStatus.bind(null, r.id, 'contacted')}>
+                          <button className="w-full rounded-lg bg-[#0D2545] px-3 py-1.5 text-xs text-white hover:bg-[#0D2545]/90 dark:bg-[#0D2545]">
+                            Đã liên hệ
+                          </button>
+                        </form>
+                        <form action={updateStatus.bind(null, r.id, 'rejected')}>
+                          <button className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">
+                            Từ chối
+                          </button>
+                        </form>
+                      </>
+                    )}
+                    {r.status === 'contacted' && (
+                      <form action={updateStatus.bind(null, r.id, 'converted')}>
+                        <button className="w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700">
+                          Đã vào học
                         </button>
                       </form>
-                      <form action={updateStatus.bind(null, r.id, 'rejected')}>
-                        <button className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">
-                          Từ chối
-                        </button>
-                      </form>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
 
           {(registrations ?? []).length === 0 && (
-            <div className="rounded-xl border border-dashed py-16 text-center text-gray-400">
-              Chưa có đơn đăng ký nào
+            <div className="rounded-xl border border-dashed py-16 text-center text-gray-400 dark:border-gray-700">
+              {filter ? `Không có đơn nào ở trạng thái này` : 'Chưa có đơn đăng ký nào'}
             </div>
           )}
         </div>

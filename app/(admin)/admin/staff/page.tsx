@@ -51,9 +51,9 @@ export default async function StaffManagePage() {
         <div className="grid gap-6 xl:grid-cols-3">
           {/* Danh sách staff */}
           <div className="xl:col-span-2">
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Trợ giảng</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">SĐT</th>
@@ -62,17 +62,17 @@ export default async function StaffManagePage() {
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {(staffList ?? []).map((s: Profile) => {
                     const staffSlots = getStaffSlots(s.id)
                     return (
-                      <tr key={s.id} className="hover:bg-gray-50">
+                      <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                         <td className="px-4 py-3">
-                          <div className="font-medium">{s.full_name}</div>
+                          <div className="font-medium dark:text-gray-100">{s.full_name}</div>
                           <div className="text-xs text-gray-400">{s.email}</div>
                           {!s.auth_user_id && <div className="text-xs text-amber-500">Chưa đăng nhập lần đầu</div>}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{s.phone ?? '—'}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.phone ?? '—'}</td>
                         <td className="px-4 py-3">
                           {staffSlots.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
@@ -93,7 +93,7 @@ export default async function StaffManagePage() {
                         </td>
                         <td className="px-4 py-3">
                           <form action={toggleStaff.bind(null, s.id, s.is_active)}>
-                            <button className="text-xs text-gray-400 hover:text-[#0D2545]">
+                            <button className="text-xs text-gray-400 hover:text-[#0D2545] dark:hover:text-[#C9A84C]">
                               {s.is_active ? 'Khóa' : 'Mở khóa'}
                             </button>
                           </form>
@@ -115,18 +115,18 @@ export default async function StaffManagePage() {
 
           {/* Form thêm staff */}
           <div>
-            <h3 className="mb-4 font-semibold">Thêm trợ giảng mới</h3>
-            <form action={createStaff} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+            <h3 className="mb-4 font-semibold dark:text-gray-100">Thêm trợ giảng mới</h3>
+            <form action={createStaff} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Gmail *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Gmail *</label>
                 <Input name="email" type="email" required placeholder="huyen@gmail.com" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Họ tên</label>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Họ tên</label>
                 <Input name="full_name" required placeholder="Nguyễn Thị Huyền" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Số điện thoại</label>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Số điện thoại</label>
                 <Input name="phone" placeholder="0901234567" />
               </div>
               <p className="text-xs text-gray-400">
