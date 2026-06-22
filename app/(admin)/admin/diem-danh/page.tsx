@@ -37,19 +37,37 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
   if (selectedClassId) {
     selectedClass = (classes ?? []).find((c: Class) => c.id === selectedClassId) ?? null
 
-    const [studentsRes, sessionsRes] = await Promise.all([
+    // Cutoff = đầu ngày kế tiếp (UTC) để bao phủ cả ngày selectedDate ở múi giờ +7
+    const cutoff = new Date(selectedDate)
+    cutoff.setDate(cutoff.getDate() + 1)
+    const cutoffISO = cutoff.toISOString()
+
+    const [allStudentsRes, sessionsRes] = await Promise.all([
       supabase.from('students').select('*').eq('class_id', selectedClassId).eq('status', 'active').order('full_name'),
       supabase.from('sessions').select('*').eq('class_id', selectedClassId).eq('session_date', selectedDate),
     ])
 
-    students = studentsRes.data ?? []
+    const allStudents: Student[] = allStudentsRes.data ?? []
     sessions = sessionsRes.data ?? []
 
-    const studentIds = students.map((s: Student) => s.id)
-    if (studentIds.length > 0) {
-      const { data: pkgs } = await supabase
-        .from('packages').select('*').in('student_id', studentIds).eq('status', 'active')
-      packages = pkgs ?? []
+    if (allStudents.length > 0) {
+      const allIds = allStudents.map((s: Student) => s.id)
+
+      // Chỉ lấy gói học được tạo trước hoặc trong ngày đang xem
+      // (loại học sinh đăng ký sau ngày này — ví dụ tháng 6 xem tháng 5)
+      const { data: eligiblePkgs } = await supabase
+        .from('packages')
+        .select('*')
+        .in('student_id', allIds)
+        .neq('status', 'cancelled')
+        .lt('created_at', cutoffISO)
+        .order('created_at', { ascending: false })
+
+      packages = eligiblePkgs ?? []
+
+      // Chỉ hiển thị học sinh có gói hợp lệ trong ngày được chọn
+      const eligibleIds = new Set(packages.map((p: Package) => p.student_id))
+      students = allStudents.filter((s: Student) => eligibleIds.has(s.id))
     }
   }
 
