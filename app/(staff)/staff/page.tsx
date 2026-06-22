@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import { getProfile } from '@/lib/supabase/queries'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CalendarCheck, CheckCircle, CalendarDays, ArrowRight, Clock } from 'lucide-react'
@@ -13,13 +14,7 @@ function formatTime(t: string) { return t.slice(0, 5) }
 
 export default async function StaffHomePage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .eq('auth_user_id', user?.id ?? '')
-    .single()
+  const profile = await getProfile()
 
   const { data: slots } = await supabase
     .from('slots')

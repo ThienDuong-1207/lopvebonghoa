@@ -1,18 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser, getProfile } from '@/lib/supabase/queries'
 import BottomNav from '@/components/staff/BottomNav'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bell, LogOut } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
-    .eq('auth_user_id', user?.id ?? '')
-    .single()
+  const [user, profile] = await Promise.all([getAuthUser(), getProfile()])
 
   const initials = profile?.full_name
     ?.split(' ')

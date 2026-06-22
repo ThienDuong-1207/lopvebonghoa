@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import { getProfile } from '@/lib/supabase/queries'
 import CheckinButton from '@/components/staff/CheckinButton'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import type { Slot, Student, Package, Session } from '@/lib/types/database'
@@ -11,19 +12,12 @@ function formatTime(t: string) {
 
 export default async function DiemDanhPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const profile = await getProfile()
 
   const today = new Date()
   const todayDow = today.getDay()
   const todayStr = today.toISOString().split('T')[0]
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user?.id ?? '')
-    .single()
-
-  // Ca hôm nay của staff này — dùng profiles.id, không phải auth user id
   const { data: slots } = await supabase
     .from('slots')
     .select('*')
@@ -42,29 +36,19 @@ export default async function DiemDanhPage() {
     )
   }
 
-  // Lấy học sinh trong các ca đó
   const slotIds = slots.map((s: Slot) => s.id)
 
-  const { data: students } = await supabase
-    .from('students')
-    .select('*')
-    .in('preferred_slot_id', slotIds)
-    .eq('status', 'active')
+  // students + sessions chạy song song, không phụ thuộc nhau
+  const [{ data: students }, { data: todaySessions }] = await Promise.all([
+    supabase.from('students').select('*').in('preferred_slot_id', slotIds).eq('status', 'active'),
+    supabase.from('sessions').select('*').in('slot_id', slotIds).eq('session_date', todayStr),
+  ])
 
-  // Lấy gói active của từng học sinh
+  // packages phụ thuộc vào studentIds nên chạy sau
   const studentIds = (students ?? []).map((s: Student) => s.id)
-  const { data: packages } = await supabase
-    .from('packages')
-    .select('*')
-    .in('student_id', studentIds)
-    .eq('status', 'active')
-
-  // Lấy sessions hôm nay
-  const { data: todaySessions } = await supabase
-    .from('sessions')
-    .select('*')
-    .in('slot_id', slotIds)
-    .eq('session_date', todayStr)
+  const { data: packages } = studentIds.length
+    ? await supabase.from('packages').select('*').in('student_id', studentIds).eq('status', 'active')
+    : { data: [] }
 
   const checkedIn = (todaySessions ?? []).filter((s: Session) => s.status === 'present').length
   const absent = (todaySessions ?? []).filter((s: Session) => s.status === 'absent').length

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser, getProfile } from '@/lib/supabase/queries'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from 'next/link'
 import { ChevronLeft, Bell } from 'lucide-react'
@@ -12,13 +12,7 @@ interface TopbarProps {
 }
 
 export default async function Topbar({ title, subtitle, backHref, backLabel }: TopbarProps) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
-    .eq('auth_user_id', user?.id ?? '')
-    .single()
+  const [user, profile] = await Promise.all([getAuthUser(), getProfile()])
 
   const initials = profile?.full_name
     ?.split(' ')
