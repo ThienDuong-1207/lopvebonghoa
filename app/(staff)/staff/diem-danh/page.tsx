@@ -74,7 +74,8 @@ export default async function DiemDanhPage({ searchParams }: Props) {
         .from('packages')
         .select('*')
         .in('student_id', ids)
-        .eq('status', 'active')
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false })
       packages = pkgs ?? []
     }
   }

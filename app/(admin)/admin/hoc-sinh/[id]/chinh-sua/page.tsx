@@ -16,11 +16,12 @@ async function updateStudent(id: string, formData: FormData) {
 
   await Promise.all([
     supabase.from('students').update({
-      full_name: (formData.get('full_name') as string).trim(),
-      nickname:  (formData.get('nickname') as string).trim() || null,
-      age:       formData.get('age') ? Number(formData.get('age')) : null,
-      class_id:  (formData.get('class_id') as string) || null,
-      notes:     (formData.get('notes') as string).trim() || null,
+      full_name:   (formData.get('full_name') as string).trim(),
+      nickname:    (formData.get('nickname') as string).trim() || null,
+      age:         formData.get('age') ? Number(formData.get('age')) : null,
+      class_id:    (formData.get('class_id') as string) || null,
+      notes:       (formData.get('notes') as string).trim() || null,
+      enrolled_at: (formData.get('enrolled_at') as string) || undefined,
     }).eq('id', id),
 
     supabase.from('parents').update({
@@ -88,6 +89,19 @@ export default async function ChinhSuaHocSinhPage({ params }: { params: { id: st
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Ngày bắt đầu học
+                    <span className="ml-1.5 text-xs font-normal text-amber-500">
+                      ← quan trọng với data cũ
+                    </span>
+                  </label>
+                  <Input
+                    name="enrolled_at"
+                    type="date"
+                    defaultValue={student.enrolled_at ? student.enrolled_at.slice(0, 10) : ''}
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ghi chú</label>
