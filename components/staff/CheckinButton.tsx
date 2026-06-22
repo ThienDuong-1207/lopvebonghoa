@@ -10,6 +10,7 @@ interface Props {
   packageId: string
   classId: string
   sessionDate: string
+  profileId: string
   initialStatus: 'present' | 'absent' | null
   sessionId?: string
 }
@@ -19,6 +20,7 @@ export default function CheckinButton({
   packageId,
   classId,
   sessionDate,
+  profileId,
   initialStatus,
   sessionId: initialSessionId,
 }: Props) {
@@ -50,7 +52,6 @@ export default function CheckinButton({
         toast.success(newStatus === 'present' ? 'Đã cập nhật: Có mặt' : 'Đã cập nhật: Vắng mặt')
       } else {
         // Chưa có session → tạo mới
-        const { data: { user } } = await supabase.auth.getUser()
         const { data, error } = await supabase
           .from('sessions')
           .insert({
@@ -58,7 +59,7 @@ export default function CheckinButton({
             student_id:    studentId,
             class_id:      classId,
             session_date:  sessionDate,
-            checked_in_by: user?.id,
+            checked_in_by: profileId,
             status:        newStatus,
           })
           .select('id')

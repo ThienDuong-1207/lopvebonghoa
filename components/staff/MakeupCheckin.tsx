@@ -19,9 +19,11 @@ export interface MakeupStudent {
 interface Props {
   students: MakeupStudent[]
   sessionDate: string
+  profileId: string
+  hostClassId: string
 }
 
-export default function MakeupCheckin({ students, sessionDate }: Props) {
+export default function MakeupCheckin({ students, sessionDate, profileId, hostClassId }: Props) {
   const [open, setOpen] = useState(false)
   const [done, setDone] = useState<Set<string>>(
     new Set(students.filter((s) => s.alreadyDone).map((s) => s.id))
@@ -33,13 +35,12 @@ export default function MakeupCheckin({ students, sessionDate }: Props) {
     if (loading || done.has(student.id)) return
     setLoading(student.id)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       const { error } = await supabase.from('sessions').insert({
         package_id:    student.package_id,
         student_id:    student.id,
-        class_id:      student.class_id,
+        class_id:      hostClassId,
         session_date:  sessionDate,
-        checked_in_by: user?.id,
+        checked_in_by: profileId,
         status:        'makeup',
       })
       if (error) throw error

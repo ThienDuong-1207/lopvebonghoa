@@ -170,6 +170,7 @@ export default async function DiemDanhPage() {
                         packageId={pkg.id}
                         classId={cls.id}
                         sessionDate={todayStr}
+                        profileId={profile?.id ?? ''}
                         initialStatus={session?.status ?? null}
                         sessionId={session?.id}
                       />
@@ -190,7 +191,12 @@ export default async function DiemDanhPage() {
         )
       })}
 
-      <MakeupCheckin students={makeupCandidates} sessionDate={todayStr} />
+      <MakeupCheckin
+        students={makeupCandidates}
+        sessionDate={todayStr}
+        profileId={profile?.id ?? ''}
+        hostClassId={classIds[0] ?? ''}
+      />
     </div>
   )
 }
