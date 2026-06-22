@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
 import Link from 'next/link'
-import CheckinButton from '@/components/staff/CheckinButton'
+import AttendanceRow from '@/components/staff/AttendanceRow'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, DAY_FULL } from '@/lib/types/database'
 
@@ -198,53 +198,21 @@ export default async function DiemDanhPage({ searchParams }: Props) {
                   {clsStudents.map((student: Student) => {
                     const pkg     = packages.find((p) => p.student_id === student.id)
                     const session = sessions.find((s) => s.student_id === student.id)
-                    const initials = student.full_name
-                      .split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()
 
-                    return (
+                    return pkg ? (
+                      <AttendanceRow
+                        key={student.id}
+                        student={student}
+                        pkg={pkg}
+                        session={session}
+                        classId={cls.id}
+                        sessionDate={selectedDateStr}
+                        profileId={profile?.id ?? ''}
+                      />
+                    ) : (
                       <div key={student.id} className="flex items-center justify-between px-4 py-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0D2545]/10 text-sm font-semibold text-[#0D2545]">
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-medium text-gray-800">
-                                {student.nickname ?? student.full_name}
-                              </span>
-                              {student.nickname && (
-                                <span className="truncate text-xs text-gray-400">({student.full_name})</span>
-                              )}
-                              {pkg?.payment_status === 'pending' && (
-                                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                                  Chờ thu
-                                </span>
-                              )}
-                            </div>
-                            {pkg && (
-                              <div className="text-xs text-gray-400">
-                                Buổi {pkg.used_sessions}/{pkg.total_sessions}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {pkg ? (
-                          <CheckinButton
-                            studentId={student.id}
-                            packageId={pkg.id}
-                            classId={cls.id}
-                            sessionDate={selectedDateStr}
-                            profileId={profile?.id ?? ''}
-                            initialStatus={
-                              session?.status === 'makeup' ? 'present'
-                              : (session?.status ?? null)
-                            }
-                            sessionId={session?.id}
-                          />
-                        ) : (
-                          <span className="shrink-0 text-xs text-red-400">Hết gói</span>
-                        )}
+                        <span className="text-sm text-gray-600">{student.nickname ?? student.full_name}</span>
+                        <span className="text-xs text-red-400">Hết gói</span>
                       </div>
                     )
                   })}

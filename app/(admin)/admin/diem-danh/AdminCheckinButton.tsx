@@ -13,7 +13,11 @@ interface Props {
   profileId: string
   initialStatus: 'present' | 'absent' | 'makeup' | null
   sessionId?: string
+  onCountChange?: (delta: number) => void
 }
+
+const countable = (s: 'present' | 'absent' | 'makeup' | null) =>
+  s === 'present' || s === 'makeup' ? 1 : 0
 
 export default function AdminCheckinButton({
   studentId,
@@ -23,6 +27,7 @@ export default function AdminCheckinButton({
   profileId,
   initialStatus,
   sessionId: initialSessionId,
+  onCountChange,
 }: Props) {
   const [status, setStatus] = useState<'present' | 'absent' | 'makeup' | null>(initialStatus)
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(initialSessionId)
@@ -32,12 +37,14 @@ export default function AdminCheckinButton({
   async function handleCheckin(newStatus: 'present' | 'absent' | 'makeup') {
     if (loading) return
     setLoading(true)
+    const prev = status
     try {
       if (status === newStatus && currentSessionId) {
         const { error } = await supabase.from('sessions').delete().eq('id', currentSessionId)
         if (error) throw error
         setStatus(null)
         setCurrentSessionId(undefined)
+        onCountChange?.(-countable(prev))
         toast('Đã xóa điểm danh', { icon: '↩' })
       } else if (currentSessionId) {
         const { error } = await supabase
@@ -46,6 +53,7 @@ export default function AdminCheckinButton({
           .eq('id', currentSessionId)
         if (error) throw error
         setStatus(newStatus)
+        onCountChange?.(countable(newStatus) - countable(prev))
         toast.success('Đã cập nhật')
       } else {
         const { data, error } = await supabase
@@ -63,6 +71,7 @@ export default function AdminCheckinButton({
         if (error) throw error
         setStatus(newStatus)
         setCurrentSessionId(data?.id)
+        onCountChange?.(countable(newStatus) - countable(prev))
         toast.success(newStatus === 'present' ? 'Có mặt ✓' : newStatus === 'absent' ? 'Vắng mặt' : 'Học bù ↩')
       }
     } catch {

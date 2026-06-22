@@ -5,7 +5,7 @@ import { getProfile } from '@/lib/supabase/queries'
 import Topbar from '@/components/admin/Topbar'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
-import AdminCheckinButton from './AdminCheckinButton'
+import AdminAttendanceRow from './AdminAttendanceRow'
 import DateClassPicker from './DateClassPicker'
 import MakeupSearchBox from './MakeupSearchBox'
 
@@ -129,51 +129,23 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
                 ) : students.map((student: Student) => {
                   const pkg     = packages.find((p: Package) => p.student_id === student.id)
                   const session = sessions.find((s: Session) => s.student_id === student.id)
-                  const initials = student.full_name.split(' ').map((w: string) => w[0]).slice(-2).join('').toUpperCase()
 
-                  return (
-                    <div key={student.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#0D2545]/10 text-sm font-semibold text-[#0D2545] dark:bg-[#C9A84C]/15 dark:text-[#C9A84C]">
-                          {initials}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-gray-800 dark:text-gray-100">
-                              {student.nickname ?? student.full_name}
-                            </span>
-                            {student.nickname && <span className="text-xs text-gray-400">({student.full_name})</span>}
-                            {pkg?.payment_status === 'pending' && (
-                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                                Chờ thu
-                              </span>
-                            )}
-                          </div>
-                          {pkg ? (
-                            <div className="text-xs text-gray-400">
-                              Buổi {pkg.used_sessions}/{pkg.total_sessions}
-                              {pkg.total_sessions - pkg.used_sessions <= 2 && (
-                                <span className="ml-1.5 font-medium text-red-400">· Còn {pkg.total_sessions - pkg.used_sessions}</span>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-red-400">Chưa có gói học</div>
-                          )}
-                        </div>
-                      </div>
-                      {pkg ? (
-                        <AdminCheckinButton
-                          studentId={student.id}
-                          packageId={pkg.id}
-                          classId={selectedClassId}
-                          sessionDate={selectedDate}
-                          profileId={profile?.id ?? ''}
-                          initialStatus={(session?.status as 'present' | 'absent' | 'makeup') ?? null}
-                          sessionId={session?.id}
-                        />
-                      ) : (
-                        <span className="text-xs text-red-400">Hết gói</span>
-                      )}
+                  return pkg ? (
+                    <AdminAttendanceRow
+                      key={student.id}
+                      student={student}
+                      pkg={pkg}
+                      session={session}
+                      classId={selectedClassId}
+                      sessionDate={selectedDate}
+                      profileId={profile?.id ?? ''}
+                    />
+                  ) : (
+                    <div key={student.id} className="flex items-center justify-between px-5 py-3">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        {student.nickname ?? student.full_name}
+                      </span>
+                      <span className="text-xs text-red-400">Chưa có gói học</span>
                     </div>
                   )
                 })}
