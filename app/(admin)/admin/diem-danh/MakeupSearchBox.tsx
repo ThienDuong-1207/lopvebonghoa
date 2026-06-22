@@ -174,7 +174,7 @@ export default function MakeupSearchBox({ classId, sessionDate, profileId, exclu
                       {r.nickname ?? r.full_name}
                       {r.nickname && <span className="text-xs font-normal text-gray-400">({r.full_name})</span>}
                       {r.payment_status === 'pending' && (
-                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Nợ</span>
+                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Chờ thu</span>
                       )}
                     </div>
                     <div className="text-xs text-gray-400">
@@ -218,7 +218,7 @@ export default function MakeupSearchBox({ classId, sessionDate, profileId, exclu
                       </span>
                       {m.nickname && <span className="text-xs text-gray-400">({m.full_name})</span>}
                       {m.payment_status === 'pending' && (
-                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">Nợ</span>
+                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">Chờ thu</span>
                       )}
                     </div>
                     <div className="text-xs text-gray-400">

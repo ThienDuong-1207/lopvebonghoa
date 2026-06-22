@@ -170,14 +170,12 @@ export default async function LichCaPage({ searchParams }: Props) {
                       <span className="text-sm font-normal text-gray-400">/{cls.max_capacity}</span>
                     </div>
                     <div className="text-xs text-gray-400">học sinh</div>
-                    {isToday && (
-                      <Link
-                        href="/staff/diem-danh"
-                        className="rounded-full bg-[#C9A84C] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#C9A84C]/90"
-                      >
-                        Điểm danh →
-                      </Link>
-                    )}
+                    <Link
+                      href="/staff/diem-danh"
+                      className="rounded-full bg-[#C9A84C] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#C9A84C]/90"
+                    >
+                      Điểm danh →
+                    </Link>
                   </div>
                 </div>
 
@@ -214,7 +212,7 @@ export default async function LichCaPage({ searchParams }: Props) {
                               )}
                               {pkg?.payment_status === 'pending' && (
                                 <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                                  Nợ
+                                  Chờ thu
                                 </span>
                               )}
                             </div>

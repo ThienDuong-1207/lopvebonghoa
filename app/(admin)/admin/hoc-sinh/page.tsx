@@ -103,7 +103,7 @@ export default async function HocSinhPage({ searchParams }: Props) {
                       <span className="font-medium text-gray-800 dark:text-gray-100">{s.full_name}</span>
                       {unpaidIds.has(s.id) && (
                         <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                          Nợ
+                          Chờ thu
                         </span>
                       )}
                     </div>

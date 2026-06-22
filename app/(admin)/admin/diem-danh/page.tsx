@@ -146,7 +146,7 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
                             {student.nickname && <span className="text-xs text-gray-400">({student.full_name})</span>}
                             {pkg?.payment_status === 'pending' && (
                               <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                                Nợ
+                                Chờ thu
                               </span>
                             )}
                           </div>
