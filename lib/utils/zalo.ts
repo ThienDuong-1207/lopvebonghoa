@@ -7,16 +7,39 @@ interface ZaloParams {
   sessionsUsed: number
   sessionsTotal: number
   sessionsLeft: number
+  lastSessionDate: string | null  // YYYY-MM-DD từ DB
   alertType: AlertTemplate
 }
 
+function formatDate(iso: string | null): string {
+  if (!iso) return '___/___/______'
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+const BANK_INFO = `Ngân hàng Techcombank
+NGUYEN THI QUYNH MY
+19033822467012
+Nội dung ck: chỉ cần ghi tên bé thôi ạ`
+
 export function buildZaloContent(p: ZaloParams): string {
   if (p.alertType === 'package_ended') {
-    return `Chào ${p.parentName} ạ, bé ${p.childName} đã học xong ${p.sessionsTotal} buổi rồi ạ. Anh/Chị có muốn đăng ký tiếp cho bé không ạ?`
+    return `Dạ chị ơi, bé ${p.childName} đã học hết số buổi của tháng cũ vào ngày "${formatDate(p.lastSessionDate)}" và bắt buổi đầu tiên của tháng mới vào ngày "___/___/______", phụ huynh cho em thu học phí tháng mới của bé ạ.
+
+Phụ huynh tiếp tục đăng kí cho bé có thể gửi học phí vào STK sau giúp em chị nhen:
+${BANK_INFO}
+Em cảm ơn chị nhiều`
   }
+
   if (p.alertType === 'near_end') {
-    return `Chào ${p.parentName} ạ, bé ${p.childName} đang học buổi ${p.sessionsUsed}/${p.sessionsTotal} rồi ạ. Khi bé học hết gói mình có thể đóng tiếp để bé học liên mạch nhé.`
+    return `Dạ chị ơi, bé ${p.childName} đang học buổi ${p.sessionsUsed}/${p.sessionsTotal} rồi ạ. Khi bé học hết gói mình có thể đóng tiếp để bé học liên mạch nhé ạ.
+
+Phụ huynh có thể gửi học phí vào STK sau giúp em chị nhen:
+${BANK_INFO}
+Em cảm ơn chị nhiều`
   }
+
+  // inactive
   return `Chào ${p.parentName} ạ, lâu rồi không thấy bé ${p.childName} đến vẽ. Bé còn ${p.sessionsLeft} buổi trong gói, mình nhớ bé lắm ạ.`
 }
 

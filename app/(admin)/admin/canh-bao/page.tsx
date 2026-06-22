@@ -16,25 +16,50 @@ export default async function CanhBaoPage() {
       students (
         full_name,
         parents ( full_name, phone ),
-        packages ( used_sessions, total_sessions, status )
+        packages ( used_sessions, total_sessions, status, sessions ( session_date, status ) )
       )
     `)
     .eq('resolved', false)
     .order('triggered_at', { ascending: false })
 
   const packageEnded = (alerts ?? []).filter((a: { type: string }) => a.type === 'package_ended')
-  const nearEnd = (alerts ?? []).filter((a: { type: string }) => a.type === 'near_end')
-  const inactive = (alerts ?? []).filter((a: { type: string }) => a.type === 'inactive')
+  const nearEnd     = (alerts ?? []).filter((a: { type: string }) => a.type === 'near_end')
+  const inactive    = (alerts ?? []).filter((a: { type: string }) => a.type === 'inactive')
 
   const dotColor: Record<string, string> = {
-    red: 'bg-red-500',
-    amber: 'bg-amber-400',
-    gray: 'bg-gray-400',
+    red: 'bg-red-500', amber: 'bg-amber-400', gray: 'bg-gray-400',
+  }
+
+  type AlertItem = {
+    id: string
+    type: string
+    zalo_sent_at: string | null
+    resolved: boolean
+    students: {
+      full_name: string
+      parents: { full_name: string; phone: string } | null
+      packages: {
+        used_sessions: number
+        total_sessions: number
+        status: string
+        sessions: { session_date: string; status: string }[]
+      }[]
+    }
+  }
+
+  function getLastSessionDate(alert: AlertItem): string | null {
+    const pkgs = alert.students.packages ?? []
+    const allSessions = pkgs.flatMap((p) => p.sessions ?? [])
+    const attended = allSessions
+      .filter((s) => s.status === 'present' || s.status === 'makeup')
+      .map((s) => s.session_date)
+      .sort()
+    return attended.length > 0 ? attended[attended.length - 1] : null
   }
 
   function renderGroup(
     title: string,
-    items: typeof alerts,
+    items: AlertItem[] | null,
     badge?: string,
     color: 'red' | 'amber' | 'gray' = 'gray'
   ) {
@@ -47,19 +72,10 @@ export default async function CanhBaoPage() {
           {badge && <Badge variant="destructive">{badge}</Badge>}
         </div>
         <div className="space-y-3">
-          {items.map((alert: {
-            id: string
-            type: string
-            zalo_sent_at: string | null
-            resolved: boolean
-            students: {
-              full_name: string
-              parents: { full_name: string; phone: string } | null
-              packages: { used_sessions: number; total_sessions: number; status: string }[]
-            }
-          }) => {
+          {items.map((alert) => {
             const pkg = alert.students.packages.find((p) => p.status === 'active')
               ?? alert.students.packages.find((p) => p.status === 'completed')
+            const lastSessionDate = getLastSessionDate(alert)
             return (
               <AlertRow
                 key={alert.id}
@@ -71,6 +87,7 @@ export default async function CanhBaoPage() {
                 sessionsUsed={pkg?.used_sessions ?? 0}
                 sessionsTotal={pkg?.total_sessions ?? 8}
                 sessionsLeft={pkg ? pkg.total_sessions - pkg.used_sessions : 0}
+                lastSessionDate={lastSessionDate}
                 zaloSentAt={alert.zalo_sent_at}
                 resolved={alert.resolved}
               />
@@ -94,9 +111,9 @@ export default async function CanhBaoPage() {
           </div>
         ) : (
           <>
-            {renderGroup('Hết gói', packageEnded, String(packageEnded.length), 'red')}
-            {renderGroup('Sắp hết gói', nearEnd, String(nearEnd.length), 'amber')}
-            {renderGroup('Nghỉ trên 14 ngày', inactive, String(inactive.length), 'gray')}
+            {renderGroup('Hết gói', packageEnded as AlertItem[], String(packageEnded.length), 'red')}
+            {renderGroup('Sắp hết gói', nearEnd as AlertItem[], String(nearEnd.length), 'amber')}
+            {renderGroup('Nghỉ trên 14 ngày', inactive as AlertItem[], String(inactive.length), 'gray')}
           </>
         )}
       </div>

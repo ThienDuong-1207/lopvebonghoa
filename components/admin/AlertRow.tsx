@@ -14,6 +14,7 @@ interface Props {
   sessionsUsed: number
   sessionsTotal: number
   sessionsLeft: number
+  lastSessionDate: string | null
   zaloSentAt: string | null
   resolved: boolean
 }
@@ -40,6 +41,7 @@ export default function AlertRow({
   sessionsUsed,
   sessionsTotal,
   sessionsLeft,
+  lastSessionDate,
   zaloSentAt,
   resolved,
 }: Props) {
@@ -53,6 +55,7 @@ export default function AlertRow({
     sessionsUsed,
     sessionsTotal,
     sessionsLeft,
+    lastSessionDate,
     alertType: type as 'package_ended' | 'near_end' | 'inactive',
   })
 
