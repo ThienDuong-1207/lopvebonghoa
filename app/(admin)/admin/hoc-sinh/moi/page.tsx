@@ -58,7 +58,7 @@ export default async function TaoHocSinhPage() {
   return (
     <>
       <Topbar title="Thêm học sinh mới" backHref="/admin/hoc-sinh" backLabel="Học sinh" />
-      <div className="p-6">
+      <div className="min-h-screen bg-gray-50 p-6 dark:bg-gray-900">
         <div className="mx-auto max-w-xl">
           <StudentForm classes={classes ?? []} parents={parents ?? []} action={createStudent} />
         </div>

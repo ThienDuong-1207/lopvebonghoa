@@ -14,6 +14,17 @@ interface Props {
   action: (prev: string | null, formData: FormData) => Promise<string | null>
 }
 
+function SectionHeader({ number, title }: { number: number; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0D2545] text-xs font-bold text-white dark:bg-[#C9A84C]">
+        {number}
+      </span>
+      <h3 className="font-semibold text-gray-800 dark:text-gray-200">{title}</h3>
+    </div>
+  )
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
@@ -39,13 +50,18 @@ export default function StudentForm({ classes, parents, action }: Props) {
         </div>
       )}
 
-      {/* Thông tin học sinh */}
-      <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-        <h3 className="mb-3 font-semibold text-gray-700 dark:text-gray-200">Thông tin học sinh</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-4">
+      {/* ① Thông tin học sinh */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className="border-b border-gray-100 bg-gray-50/60 px-5 py-3.5 dark:border-gray-700 dark:bg-gray-700/30">
+          <SectionHeader number={1} title="Thông tin học sinh" />
+        </div>
+        <div className="space-y-4 p-5">
+          {/* Họ tên + Biệt danh */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Họ tên *</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Họ tên <span className="text-red-500">*</span>
+              </label>
               <Input name="full_name" required placeholder="Nguyễn Văn An" />
             </div>
             <div>
@@ -53,21 +69,29 @@ export default function StudentForm({ classes, parents, action }: Props) {
               <Input name="nickname" placeholder="An" />
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tuổi</label>
-            <Input name="age" type="number" min={4} max={12} placeholder="6" />
+
+          {/* Tuổi (nhỏ) + Lớp học (rộng) */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tuổi</label>
+              <Input name="age" type="number" min={4} max={12} placeholder="6" className="text-center" />
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
+              <select
+                name="class_id"
+                className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="">Chưa xếp lớp</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
-            <select name="class_id" className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              <option value="">Chưa xếp lớp</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
-                </option>
-              ))}
-            </select>
-          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ghi chú</label>
             <Textarea name="notes" placeholder="Dị ứng, sở thích vẽ, ..." />
@@ -75,57 +99,85 @@ export default function StudentForm({ classes, parents, action }: Props) {
         </div>
       </div>
 
-      {/* Phụ huynh */}
-      <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-        <h3 className="mb-3 font-semibold text-gray-700 dark:text-gray-200">Phụ huynh</h3>
+      {/* ② Phụ huynh */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className="border-b border-gray-100 bg-gray-50/60 px-5 py-3.5 dark:border-gray-700 dark:bg-gray-700/30">
+          <SectionHeader number={2} title="Phụ huynh" />
+        </div>
+        <div className="space-y-4 p-5">
+          {/* Chọn phụ huynh đã có */}
+          {parents.length > 0 && (
+            <>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Phụ huynh đã có{' '}
+                  <span className="font-normal text-gray-400">(nếu đã có con khác đang học)</span>
+                </label>
+                <select
+                  name="existing_parent_id"
+                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                >
+                  <option value="">— Tạo phụ huynh mới —</option>
+                  {parents.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name} — {p.phone}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-        {parents.length > 0 && (
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Chọn phụ huynh đã có (nếu có con khác đang học)
-            </label>
-            <select name="existing_parent_id" className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              <option value="">— Tạo phụ huynh mới —</option>
-              {parents.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.full_name} — {p.phone}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-400">Để trống sẽ tạo phụ huynh mới bên dưới</p>
-          </div>
-        )}
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-100 dark:border-gray-700" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white px-3 text-xs text-gray-400 dark:bg-gray-800">hoặc tạo phụ huynh mới</span>
+                </div>
+              </div>
+            </>
+          )}
 
-        <div className="space-y-3">
-          <p className="text-xs text-gray-400">
-            {parents.length > 0 ? 'Hoặc tạo phụ huynh mới:' : 'Điền thông tin phụ huynh:'}
-          </p>
-          <div className="grid grid-cols-2 gap-4">
+          {/* Tên + SĐT chính */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tên phụ huynh</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Tên phụ huynh <span className="text-red-500">*</span>
+              </label>
               <Input name="parent_name" placeholder="Nguyễn Thị B" />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Số điện thoại *</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
               <Input name="parent_phone" type="tel" placeholder="0901234567" />
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SĐT phụ</label>
-            <Input name="parent_phone_2" placeholder="0901234567" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Địa chỉ</label>
-            <Input name="parent_address" placeholder="123 Đường ABC, Phường X, Quận Y" />
+
+          {/* SĐT phụ + Địa chỉ cùng hàng */}
+          <div className="grid grid-cols-5 gap-3">
+            <div className="col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SĐT phụ</label>
+              <Input name="parent_phone_2" placeholder="0912345678" />
+            </div>
+            <div className="col-span-3">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Địa chỉ</label>
+              <Input name="parent_address" placeholder="123 Đường ABC, Quận Y" />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-3 pt-2">
+      {/* Actions — phân cấp rõ */}
+      <div className="flex items-center gap-4 pt-1">
         <SubmitButton />
-        <Button type="button" variant="outline" onClick={() => history.back()}>
+        <button
+          type="button"
+          onClick={() => history.back()}
+          className="text-sm text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+        >
           Hủy
-        </Button>
+        </button>
       </div>
     </form>
   )
