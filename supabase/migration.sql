@@ -111,7 +111,8 @@ CREATE TABLE students (
   notes         text,
   status        student_status NOT NULL DEFAULT 'active',
   enrolled_at   timestamptz NOT NULL DEFAULT now(),
-  last_seen_at  timestamptz
+  last_seen_at  timestamptz,
+  attend_days   int[]               -- ngày học trong tuần (subset của class.days_of_week); NULL = tất cả ngày
 );
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 

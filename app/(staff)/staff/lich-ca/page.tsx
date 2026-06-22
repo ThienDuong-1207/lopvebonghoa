@@ -182,7 +182,7 @@ export default async function LichCaPage({ searchParams }: Props) {
                     </div>
                     <div className="text-xs text-gray-400">học sinh</div>
                     <Link
-                      href="/staff/diem-danh"
+                      href={`/staff/diem-danh?dow=${selectedDow}&class_id=${cls.id}`}
                       className="rounded-full bg-[#C9A84C] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#C9A84C]/90"
                     >
                       Điểm danh →

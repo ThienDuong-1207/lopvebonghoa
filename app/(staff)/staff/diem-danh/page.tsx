@@ -24,8 +24,11 @@ export default async function DiemDanhPage({ searchParams }: Props) {
   const selectedClassId = searchParams.class_id ?? ''
 
   // Tính ngày thực tế của DOW được chọn trong tuần hiện tại
+  // Treat CN(0) as 7 so week is always Mon(1)…Sun(7), avoiding negative offsets
+  const toWeekday = (d: number) => d === 0 ? 7 : d
+  const diff = toWeekday(selectedDow) - toWeekday(todayDow)
   const d = new Date(today)
-  d.setDate(today.getDate() + (selectedDow - todayDow))
+  d.setDate(today.getDate() + diff)
   const selectedDateStr = d.toISOString().split('T')[0]
 
   // Lấy tất cả lớp active
