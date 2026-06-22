@@ -6,7 +6,8 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import type { Profile, Slot } from '@/lib/types/database'
+import type { Profile, Class } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
 async function createStaff(formData: FormData) {
   'use server'
@@ -31,17 +32,17 @@ async function toggleStaff(id: string, isActive: boolean) {
 export default async function StaffManagePage() {
   const supabase = createClient()
 
-  const [{ data: staffList }, { data: slots }] = await Promise.all([
+  const [{ data: staffList }, { data: classes }] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
       .eq('role', 'staff')
       .order('full_name'),
-    supabase.from('slots').select('id, name, assigned_staff_id').eq('is_active', true),
+    supabase.from('classes').select('id, name, days_of_week, assigned_staff_id').eq('is_active', true),
   ])
 
-  function getStaffSlots(staffId: string) {
-    return (slots ?? []).filter((s: Pick<Slot, 'id' | 'name' | 'assigned_staff_id'>) => s.assigned_staff_id === staffId)
+  function getStaffClasses(staffId: string) {
+    return (classes ?? []).filter((c: Pick<Class, 'id' | 'name' | 'days_of_week' | 'assigned_staff_id'>) => c.assigned_staff_id === staffId)
   }
 
   return (
@@ -64,7 +65,7 @@ export default async function StaffManagePage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {(staffList ?? []).map((s: Profile) => {
-                    const staffSlots = getStaffSlots(s.id)
+                    const staffClasses = getStaffClasses(s.id)
                     return (
                       <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                         <td className="px-4 py-3">
@@ -74,12 +75,13 @@ export default async function StaffManagePage() {
                         </td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.phone ?? '—'}</td>
                         <td className="px-4 py-3">
-                          {staffSlots.length > 0 ? (
+                          {staffClasses.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
-                              {staffSlots.map((slot: Pick<Slot, 'id' | 'name'>) => (
-                                <Badge key={slot.id} variant="outline" className="text-xs">
-                                  {slot.name}
-                                </Badge>
+                              {staffClasses.map((cls: Pick<Class, 'id' | 'name' | 'days_of_week'>) => (
+                                <div key={cls.id} className="text-xs">
+                                  <Badge variant="outline">{cls.name}</Badge>
+                                  <span className="ml-1 text-gray-400">{formatDays(cls.days_of_week)}</span>
+                                </div>
                               ))}
                             </div>
                           ) : (

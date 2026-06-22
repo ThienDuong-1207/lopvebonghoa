@@ -8,7 +8,7 @@ import { Check, X } from 'lucide-react'
 interface Props {
   studentId: string
   packageId: string
-  slotId: string
+  classId: string
   sessionDate: string
   initialStatus: 'present' | 'absent' | null
   sessionId?: string
@@ -17,7 +17,7 @@ interface Props {
 export default function CheckinButton({
   studentId,
   packageId,
-  slotId,
+  classId,
   sessionDate,
   initialStatus,
   sessionId: initialSessionId,
@@ -54,23 +54,19 @@ export default function CheckinButton({
         const { data, error } = await supabase
           .from('sessions')
           .insert({
-            package_id: packageId,
-            student_id: studentId,
-            slot_id: slotId,
-            session_date: sessionDate,
+            package_id:    packageId,
+            student_id:    studentId,
+            class_id:      classId,
+            session_date:  sessionDate,
             checked_in_by: user?.id,
-            status: newStatus,
+            status:        newStatus,
           })
           .select('id')
           .single()
         if (error) throw error
         setStatus(newStatus)
         setCurrentSessionId(data?.id)
-        if (newStatus === 'present') {
-          toast.success('Có mặt ✓')
-        } else {
-          toast.warning('Vắng mặt đã ghi nhận')
-        }
+        toast.success(newStatus === 'present' ? 'Có mặt ✓' : 'Vắng mặt đã ghi nhận')
       }
     } catch {
       toast.error('Có lỗi xảy ra, thử lại.')

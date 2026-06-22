@@ -8,19 +8,15 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import type { Package, Session } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
-const SESSION_LABEL: Record<string, string> = {
-  present: 'Có mặt',
-  absent: 'Vắng',
-  makeup: 'Học bù',
-}
+const SESSION_LABEL: Record<string, string> = { present: 'Có mặt', absent: 'Vắng', makeup: 'Học bù' }
 const STATUS_LABEL: Record<string, string> = { active: 'Đang học', paused: 'Tạm nghỉ', inactive: 'Nghỉ học' }
 const STATUS_NEXT: Record<string, string[]> = {
   active: ['paused', 'inactive'],
   paused: ['active', 'inactive'],
   inactive: ['active'],
 }
-const STATUS_NEXT_LABEL: Record<string, string> = { active: 'Đang học', paused: 'Tạm nghỉ', inactive: 'Nghỉ học' }
 
 async function changeStatus(studentId: string, newStatus: string) {
   'use server'
@@ -35,7 +31,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   const [{ data: student }, { data: packages }] = await Promise.all([
     supabase
       .from('students')
-      .select('*, parents(full_name, phone, phone_2, address), slots(name, time_start, time_end)')
+      .select('*, parents(full_name, phone, phone_2, address), classes(name, days_of_week, time_start, time_end)')
       .eq('id', params.id)
       .single(),
     supabase
@@ -80,25 +76,32 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                 <span className="text-gray-500">Tuổi</span>
                 <span className="dark:text-gray-200">{student.age ?? '—'}</span>
               </div>
+
+              {/* Lớp học */}
               <div className="flex justify-between">
-                <span className="text-gray-500">Ca học</span>
-                <span className="dark:text-gray-200">{student.slots?.name ?? '—'}</span>
+                <span className="text-gray-500">Lớp học</span>
+                <div className="text-right">
+                  <div className="dark:text-gray-200">{student.classes?.name ?? '—'}</div>
+                  {student.classes && (
+                    <div className="text-xs text-gray-400">
+                      {formatDays(student.classes.days_of_week)} · {student.classes.time_start.slice(0,5)}–{student.classes.time_end.slice(0,5)}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Status + change */}
               <div className="flex items-center justify-between border-t pt-3 dark:border-gray-700">
                 <span className="text-gray-500">Trạng thái</span>
-                <div className="flex items-center gap-2">
-                  <Badge variant={student.status === 'active' ? 'default' : student.status === 'paused' ? 'secondary' : 'outline'}>
-                    {STATUS_LABEL[student.status]}
-                  </Badge>
-                </div>
+                <Badge variant={student.status === 'active' ? 'default' : student.status === 'paused' ? 'secondary' : 'outline'}>
+                  {STATUS_LABEL[student.status]}
+                </Badge>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {STATUS_NEXT[student.status]?.map((next) => (
                   <form key={next} action={changeStatus.bind(null, params.id, next)}>
                     <button className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-500 hover:border-[#C9A84C] hover:text-[#C9A84C] dark:border-gray-600 dark:text-gray-400">
-                      → {STATUS_NEXT_LABEL[next]}
+                      → {STATUS_LABEL[next]}
                     </button>
                   </form>
                 ))}
@@ -142,7 +145,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             </CardContent>
           </Card>
 
-          {/* Gói hiện tại */}
+          {/* Gói học hiện tại */}
           <Card className="dark:border-gray-700 dark:bg-gray-800">
             <CardHeader>
               <CardTitle className="text-base dark:text-gray-100">Gói học hiện tại</CardTitle>
@@ -185,7 +188,6 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                 </div>
               )}
 
-              {/* Lịch sử gói */}
               {(packages ?? []).filter((p: Package) => p.status !== 'active').length > 0 && (
                 <div className="mt-4 border-t pt-4 dark:border-gray-700">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Gói cũ</p>
@@ -203,7 +205,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
           </Card>
 
           {/* Lịch sử buổi học */}
-          <Card className="xl:col-span-1 dark:border-gray-700 dark:bg-gray-800">
+          <Card className="dark:border-gray-700 dark:bg-gray-800">
             <CardHeader>
               <CardTitle className="text-base dark:text-gray-100">Lịch sử buổi học</CardTitle>
             </CardHeader>

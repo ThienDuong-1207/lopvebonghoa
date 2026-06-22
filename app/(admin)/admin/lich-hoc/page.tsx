@@ -6,146 +6,196 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { UserRound, Pencil } from 'lucide-react'
+import { Pencil, UserRound, Users } from 'lucide-react'
 import Link from 'next/link'
-import DeleteSlotButton from '@/components/admin/DeleteSlotButton'
-import type { Slot, Profile } from '@/lib/types/database'
+import DeleteClassButton from '@/components/admin/DeleteClassButton'
+import type { Class, Profile } from '@/lib/types/database'
+import { DAY_SHORT, SCHEDULE_PRESETS, formatDays } from '@/lib/types/database'
 
-const DAY_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+const PRESET_DAYS: Record<string, number[]> = {
+  '246': [1, 3, 5],
+  '357': [2, 4, 6],
+  '7':   [6],
+  'CN':  [0],
+}
 
-async function createSlot(formData: FormData) {
+async function createClass(formData: FormData) {
   'use server'
   const supabase = createClient()
-  await supabase.from('slots').insert({
-    name: formData.get('name') as string,
-    day_of_week: Number(formData.get('day_of_week')),
-    time_start: formData.get('time_start') as string,
-    time_end: formData.get('time_end') as string,
-    max_capacity: Number(formData.get('max_capacity')),
+  const preset = formData.get('schedule_preset') as string
+  const days = PRESET_DAYS[preset] ?? [6]
+
+  await supabase.from('classes').insert({
+    name:              (formData.get('name') as string).trim(),
+    days_of_week:      days,
+    time_start:        formData.get('time_start') as string,
+    time_end:          formData.get('time_end') as string,
+    max_capacity:      Number(formData.get('max_capacity')),
     assigned_staff_id: (formData.get('assigned_staff_id') as string) || null,
-    is_active: true,
+    is_active:         true,
   })
   redirect('/admin/lich-hoc')
 }
 
-async function toggleSlot(id: string, isActive: boolean) {
+async function toggleClass(id: string, isActive: boolean) {
   'use server'
   const supabase = createClient()
-  await supabase.from('slots').update({ is_active: !isActive }).eq('id', id)
+  await supabase.from('classes').update({ is_active: !isActive }).eq('id', id)
   redirect('/admin/lich-hoc')
 }
 
-async function deleteSlot(id: string) {
+async function deleteClass(id: string) {
   'use server'
   const supabase = createClient()
-  await supabase.from('slots').delete().eq('id', id)
+  await supabase.from('classes').delete().eq('id', id)
   redirect('/admin/lich-hoc')
 }
 
 export default async function LichHocPage() {
   const supabase = createClient()
 
-  const [{ data: slots }, { data: staffList }] = await Promise.all([
-    supabase.from('slots').select('*, profiles(full_name)').order('day_of_week').order('time_start'),
+  const [{ data: classes }, { data: staffList }, { data: studentRows }] = await Promise.all([
+    supabase.from('classes').select('*, profiles(full_name)').order('time_start').order('name'),
     supabase.from('profiles').select('id, full_name').eq('role', 'staff').eq('is_active', true),
+    supabase.from('students').select('class_id').eq('status', 'active').not('class_id', 'is', null),
   ])
 
-  const grouped = (slots ?? []).reduce<Record<number, (Slot & { profiles: { full_name: string } | null })[]>>(
-    (acc, slot) => {
-      if (!acc[slot.day_of_week]) acc[slot.day_of_week] = []
-      acc[slot.day_of_week].push(slot)
-      return acc
-    },
-    {}
-  )
+  const countByClass = (studentRows ?? []).reduce<Record<string, number>>((acc, s) => {
+    if (s.class_id) acc[s.class_id] = (acc[s.class_id] ?? 0) + 1
+    return acc
+  }, {})
+
+  // Weekly schedule grid: which days have classes
+  const daysWithClass = new Set((classes ?? []).flatMap((c: Class) => c.days_of_week))
 
   return (
     <>
-      <Topbar title="Lịch & Ca học" />
+      <Topbar title="Lịch & Lớp học" />
       <div className="p-6">
-        <div className="grid gap-6 xl:grid-cols-3">
-          {/* Danh sách ca theo ngày */}
-          <div className="xl:col-span-2">
-            {[1, 2, 3, 4, 5, 6, 0].map((dow) => (
-              <div key={dow} className="mb-5">
-                <h3 className="mb-2 font-semibold text-gray-700 dark:text-gray-200">{DAY_FULL[dow]}</h3>
-                {grouped[dow] ? (
-                  <div className="space-y-2">
-                    {grouped[dow].map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-800 dark:text-gray-100">{slot.name}</span>
-                            {!slot.is_active && <Badge variant="outline" className="text-xs">Tắt</Badge>}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {slot.time_start.slice(0, 5)}–{slot.time_end.slice(0, 5)} · Tối đa {slot.max_capacity}
-                          </div>
-                          {slot.profiles && (
-                            <div className="flex items-center gap-1 text-xs text-gray-400">
-                              <UserRound className="h-3 w-3" />
-                              {slot.profiles.full_name}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-1">
-                          {/* Toggle */}
-                          <form action={toggleSlot.bind(null, slot.id, slot.is_active)}>
-                            <button className="rounded-lg px-2.5 py-1.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200">
-                              {slot.is_active ? 'Tắt' : 'Bật'}
-                            </button>
-                          </form>
-
-                          {/* Edit */}
-                          <Link
-                            href={`/admin/lich-hoc/${slot.id}`}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-[#C9A84C]/10 hover:text-[#C9A84C]"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Link>
-
-                          {/* Delete */}
-                          <DeleteSlotButton action={deleteSlot.bind(null, slot.id)} name={slot.name} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-gray-200 py-4 text-center text-sm text-gray-300 dark:border-gray-700">
-                    Không có ca
-                  </div>
-                )}
+        {/* Mini weekly grid */}
+        <div className="mb-6 grid grid-cols-7 gap-1.5">
+          {[1, 2, 3, 4, 5, 6, 0].map((dow) => {
+            const hasClass = daysWithClass.has(dow)
+            return (
+              <div
+                key={dow}
+                className={`rounded-xl py-2 text-center text-xs font-medium transition-colors ${
+                  hasClass
+                    ? 'bg-[#0D2545] text-white'
+                    : 'bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-600'
+                }`}
+              >
+                {DAY_SHORT[dow]}
+                {hasClass && <div className="mx-auto mt-1 h-1 w-1 rounded-full bg-[#C9A84C]" />}
               </div>
-            ))}
+            )
+          })}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-3">
+          {/* Danh sách lớp */}
+          <div className="xl:col-span-2 space-y-3">
+            {(classes ?? []).length === 0 && (
+              <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center text-sm text-gray-400 dark:border-gray-700">
+                Chưa có lớp học nào — tạo lớp đầu tiên →
+              </div>
+            )}
+            {(classes ?? []).map((cls: Class & { profiles: { full_name: string } | null }) => {
+              const enrolled = countByClass[cls.id] ?? 0
+              const isFull = enrolled >= cls.max_capacity
+              return (
+                <div
+                  key={cls.id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-5 py-4 dark:border-gray-700 dark:bg-gray-800"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-gray-800 dark:text-gray-100">{cls.name}</span>
+                      {!cls.is_active && <Badge variant="outline" className="text-xs">Tắt</Badge>}
+                      {isFull && <Badge variant="secondary" className="text-xs">Đầy</Badge>}
+                    </div>
+
+                    {/* Day badges */}
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {[...cls.days_of_week].sort((a, b) => a - b).map((d) => (
+                        <span
+                          key={d}
+                          className="rounded-md bg-[#0D2545]/8 px-1.5 py-0.5 text-[11px] font-medium text-[#0D2545] dark:bg-[#C9A84C]/15 dark:text-[#C9A84C]"
+                        >
+                          {DAY_SHORT[d]}
+                        </span>
+                      ))}
+                      <span className="text-xs text-gray-400">
+                        · {cls.time_start.slice(0, 5)}–{cls.time_end.slice(0, 5)}
+                      </span>
+                    </div>
+
+                    <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span className={isFull ? 'font-semibold text-amber-500' : ''}>
+                          {enrolled}/{cls.max_capacity}
+                        </span>
+                        <span>học sinh</span>
+                      </span>
+                      {cls.profiles && (
+                        <span className="flex items-center gap-1">
+                          <UserRound className="h-3 w-3" />
+                          {cls.profiles.full_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <form action={toggleClass.bind(null, cls.id, cls.is_active)}>
+                      <button className="rounded-lg px-2.5 py-1.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200">
+                        {cls.is_active ? 'Tắt' : 'Bật'}
+                      </button>
+                    </form>
+                    <Link
+                      href={`/admin/lich-hoc/${cls.id}`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-[#C9A84C]/10 hover:text-[#C9A84C]"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Link>
+                    <DeleteClassButton action={deleteClass.bind(null, cls.id)} name={cls.name} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
-          {/* Form tạo ca mới */}
+          {/* Form tạo lớp mới */}
           <div>
-            <h3 className="mb-4 font-semibold dark:text-gray-100">Tạo ca học mới</h3>
-            <form action={createSlot} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 font-semibold dark:text-gray-100">Tạo lớp học mới</h3>
+            <form action={createClass} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tên ca *</label>
-                <Input name="name" required placeholder="VD: Thứ 2 sáng" />
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tên lớp *</label>
+                <Input name="name" required placeholder="VD: Tối 2-4-6 A" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Thứ *</label>
-                <select name="day_of_week" required className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                  {DAY_FULL.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Lịch học *</label>
+                <select
+                  name="schedule_preset"
+                  required
+                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                >
+                  {SCHEDULE_PRESETS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label} ({p.days.map((d) => DAY_SHORT[d]).join(', ')})
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Giờ bắt đầu</label>
-                  <Input name="time_start" type="time" defaultValue="08:00" />
+                  <Input name="time_start" type="time" defaultValue="17:00" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Giờ kết thúc</label>
-                  <Input name="time_end" type="time" defaultValue="10:00" />
+                  <Input name="time_end" type="time" defaultValue="19:00" />
                 </div>
               </div>
               <div>
@@ -153,8 +203,11 @@ export default async function LichHocPage() {
                 <Input name="max_capacity" type="number" defaultValue={10} min={1} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Trợ giảng</label>
-                <select name="assigned_staff_id" className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Trợ giảng phụ trách</label>
+                <select
+                  name="assigned_staff_id"
+                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                >
                   <option value="">Chưa phân công</option>
                   {(staffList ?? []).map((s: Pick<Profile, 'id' | 'full_name'>) => (
                     <option key={s.id} value={s.id}>{s.full_name}</option>
@@ -162,7 +215,7 @@ export default async function LichHocPage() {
                 </select>
               </div>
               <Button type="submit" className="w-full bg-[#0D2545] text-white hover:bg-[#0D2545]/90">
-                Tạo ca học
+                Tạo lớp học
               </Button>
             </form>
           </div>

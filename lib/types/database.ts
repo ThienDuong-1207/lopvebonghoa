@@ -26,29 +26,34 @@ export interface Parent {
   created_at: string
 }
 
-export interface Student {
-  id: string
-  full_name: string
-  nickname: string | null
-  age: number | null
-  parent_id: string
-  preferred_slot_id: string | null
-  notes: string | null
-  status: StudentStatus
-  enrolled_at: string
-  last_seen_at: string | null
-}
-
-export interface Slot {
+/**
+ * Lớp học — dạy nhiều ngày/tuần.
+ * days_of_week: [0]=CN, [1]=T2, [2]=T3, [3]=T4, [4]=T5, [5]=T6, [6]=T7
+ * Ví dụ: Tối 2-4-6 → [1,3,5] | Tối 3-5-7 → [2,4,6] | Sáng T7 → [6]
+ */
+export interface Class {
   id: string
   name: string
-  day_of_week: number
+  days_of_week: number[]
   time_start: string
   time_end: string
   max_capacity: number
   assigned_staff_id: string | null
   is_active: boolean
   created_at: string
+}
+
+export interface Student {
+  id: string
+  full_name: string
+  nickname: string | null
+  age: number | null
+  parent_id: string
+  class_id: string | null
+  notes: string | null
+  status: StudentStatus
+  enrolled_at: string
+  last_seen_at: string | null
 }
 
 export interface Package {
@@ -68,7 +73,7 @@ export interface Session {
   id: string
   package_id: string
   student_id: string
-  slot_id: string
+  class_id: string
   session_date: string
   checked_in_at: string
   checked_in_by: string
@@ -104,7 +109,7 @@ export interface Alert {
 // Extended types with joins
 export interface StudentWithRelations extends Student {
   parents: Parent
-  slots: Slot | null
+  classes: Class | null
 }
 
 export interface PackageWithSessions extends Package {
@@ -114,7 +119,7 @@ export interface PackageWithSessions extends Package {
 export interface StudentDetail extends Student {
   parents: Parent
   packages: PackageWithSessions[]
-  slots: Slot | null
+  classes: Class | null
 }
 
 export interface AlertWithStudent extends Alert {
@@ -122,4 +127,28 @@ export interface AlertWithStudent extends Alert {
     parents: Pick<Parent, 'full_name' | 'phone'>
     packages: Pick<Package, 'used_sessions' | 'total_sessions' | 'status'>[]
   }
+}
+
+// Helper
+export const DAY_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+export const DAY_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+
+export const SCHEDULE_PRESETS = [
+  { value: '246', label: 'Tối 2-4-6', days: [1, 3, 5] },
+  { value: '357', label: 'Tối 3-5-7', days: [2, 4, 6] },
+  { value: '7',   label: 'Sáng Thứ 7', days: [6] },
+  { value: 'CN',  label: 'Sáng Chủ nhật', days: [0] },
+] as const
+
+export function detectPreset(days: number[]): string {
+  const sorted = [...days].sort((a, b) => a - b).join(',')
+  if (sorted === '1,3,5') return '246'
+  if (sorted === '2,4,6') return '357'
+  if (sorted === '6') return '7'
+  if (sorted === '0') return 'CN'
+  return 'custom'
+}
+
+export function formatDays(days: number[]): string {
+  return [...days].sort((a, b) => a - b).map((d) => DAY_SHORT[d]).join(', ')
 }

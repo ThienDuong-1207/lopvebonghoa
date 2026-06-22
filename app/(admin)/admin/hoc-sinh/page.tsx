@@ -6,39 +6,36 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import ImportExportButtons from '@/components/admin/ImportExportButtons'
-import type { Student, Parent, Slot } from '@/lib/types/database'
+import type { Student, Parent, Class } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
 const STATUS_LABEL: Record<string, string> = {
-  active: 'Đang học',
-  paused: 'Tạm nghỉ',
-  inactive: 'Nghỉ học',
+  active: 'Đang học', paused: 'Tạm nghỉ', inactive: 'Nghỉ học',
 }
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
-  active: 'default',
-  paused: 'secondary',
-  inactive: 'outline',
+  active: 'default', paused: 'secondary', inactive: 'outline',
 }
 
 interface Props {
-  searchParams: { q?: string; status?: string; slot?: string }
+  searchParams: { q?: string; status?: string; class_id?: string }
 }
 
 export default async function HocSinhPage({ searchParams }: Props) {
   const supabase = createClient()
-  const { q, status, slot } = searchParams
+  const { q, status, class_id } = searchParams
 
   let query = supabase
     .from('students')
-    .select('*, parents(full_name, phone), slots(name)')
+    .select('*, parents(full_name, phone), classes(name, days_of_week)')
     .order('full_name')
 
   if (status) query = query.eq('status', status)
-  if (slot) query = query.eq('preferred_slot_id', slot)
+  if (class_id) query = query.eq('class_id', class_id)
   if (q) query = query.ilike('full_name', `%${q}%`)
 
-  const [{ data: students }, { data: slots }] = await Promise.all([
+  const [{ data: students }, { data: classes }] = await Promise.all([
     query,
-    supabase.from('slots').select('id, name').eq('is_active', true),
+    supabase.from('classes').select('id, name, days_of_week').eq('is_active', true).order('name'),
   ])
 
   return (
@@ -65,20 +62,16 @@ export default async function HocSinhPage({ searchParams }: Props) {
               <option value="inactive">Nghỉ học</option>
             </select>
             <select
-              name="slot"
-              defaultValue={slot ?? ''}
+              name="class_id"
+              defaultValue={class_id ?? ''}
               className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
             >
-              <option value="">Tất cả ca</option>
-              {(slots ?? []).map((s: Pick<Slot, 'id' | 'name'>) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
+              <option value="">Tất cả lớp</option>
+              {(classes ?? []).map((c: Pick<Class, 'id' | 'name' | 'days_of_week'>) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <Button type="submit" variant="outline" className="text-sm">
-              Lọc
-            </Button>
+            <Button type="submit" variant="outline" className="text-sm">Lọc</Button>
           </form>
           <ImportExportButtons />
           <Link href="/admin/hoc-sinh/moi">
@@ -94,13 +87,13 @@ export default async function HocSinhPage({ searchParams }: Props) {
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Học sinh</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Phụ huynh</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Số điện thoại</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Ca học</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Lớp học</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Trạng thái</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {(students ?? []).map((s: Student & { parents: Pick<Parent, 'full_name' | 'phone'>; slots: { name: string } | null }) => (
+              {(students ?? []).map((s: Student & { parents: Pick<Parent, 'full_name' | 'phone'>; classes: Pick<Class, 'name' | 'days_of_week'> | null }) => (
                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-800 dark:text-gray-100">{s.full_name}</div>
@@ -108,7 +101,16 @@ export default async function HocSinhPage({ searchParams }: Props) {
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.parents?.full_name}</td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.parents?.phone}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.slots?.name ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    {s.classes ? (
+                      <div>
+                        <div className="text-sm text-gray-700 dark:text-gray-200">{s.classes.name}</div>
+                        <div className="text-xs text-gray-400">{formatDays(s.classes.days_of_week)}</div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[s.status]}>{STATUS_LABEL[s.status]}</Badge>
                   </td>
@@ -121,9 +123,7 @@ export default async function HocSinhPage({ searchParams }: Props) {
               ))}
               {(students ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-400">
-                    Không có học sinh nào
-                  </td>
+                  <td colSpan={6} className="py-10 text-center text-gray-400">Không có học sinh nào</td>
                 </tr>
               )}
             </tbody>

@@ -8,7 +8,8 @@ import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { Users, UserCheck, TriangleAlert, Banknote, ArrowRight, Clock } from 'lucide-react'
-import type { Slot, Alert } from '@/lib/types/database'
+import type { Class, Alert } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
 const DAY_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 const DAY_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
@@ -49,7 +50,7 @@ export default async function AdminDashboard() {
     { count: todayCheckins },
     { count: pendingRegistrations },
     { count: unresolvedAlerts },
-    { data: slots },
+    { data: classes },
     { data: alerts },
     { data: monthPayments },
     { data: allPayments },
@@ -59,7 +60,7 @@ export default async function AdminDashboard() {
     supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('session_date', todayStr),
     supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('alerts').select('*', { count: 'exact', head: true }).eq('resolved', false),
-    supabase.from('slots').select('*').eq('is_active', true).order('day_of_week').order('time_start'),
+    supabase.from('classes').select('*').eq('is_active', true).order('time_start').order('name'),
     supabase.from('alerts').select('*, students(full_name)').eq('resolved', false).order('triggered_at', { ascending: false }).limit(4),
     supabase.from('packages').select('amount_paid').gte('paid_at', monthStart),
     supabase.from('packages').select('amount_paid, paid_at').gte('paid_at', sixMonthsAgo.toISOString().split('T')[0]),
@@ -87,7 +88,7 @@ export default async function AdminDashboard() {
     return { day: DAY_SHORT[dow], count, isToday: dow === todayDow }
   })
 
-  const todaySlots = (slots ?? []).filter((s: Slot) => s.day_of_week === todayDow)
+  const todayClasses = (classes ?? []).filter((c: Class) => c.days_of_week.includes(todayDow))
 
   return (
     <>
@@ -199,8 +200,8 @@ export default async function AdminDashboard() {
                 <span className="text-sm font-semibold text-white">{activeStudents ?? 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-white/50">Ca học / tuần</span>
-                <span className="text-sm font-semibold text-white">{(slots ?? []).length}</span>
+                <span className="text-sm text-white/50">Lớp đang hoạt động</span>
+                <span className="text-sm font-semibold text-white">{(classes ?? []).length}</span>
               </div>
             </div>
 
@@ -224,15 +225,15 @@ export default async function AdminDashboard() {
               </Link>
             </div>
 
-            {todaySlots.length === 0 ? (
+            {todayClasses.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-700/50">
-                <p className="text-sm text-gray-400">Không có ca hôm nay</p>
+                <p className="text-sm text-gray-400">Không có lớp hôm nay</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {todaySlots.map((slot: Slot) => (
+                {todayClasses.map((cls: Class) => (
                   <div
-                    key={slot.id}
+                    key={cls.id}
                     className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3.5 dark:border-gray-700 dark:bg-gray-700/30"
                   >
                     <div className="flex items-center gap-3">
@@ -240,14 +241,14 @@ export default async function AdminDashboard() {
                         <Clock className="h-4 w-4 text-[#C9A84C]" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 dark:text-gray-100">{slot.name}</p>
+                        <p className="font-semibold text-gray-800 dark:text-gray-100">{cls.name}</p>
                         <p className="text-xs text-gray-400">
-                          {formatTime(slot.time_start)} – {formatTime(slot.time_end)}
+                          {formatTime(cls.time_start)} – {formatTime(cls.time_end)} · {formatDays(cls.days_of_week)}
                         </p>
                       </div>
                     </div>
                     <Badge variant="outline" className="text-xs">
-                      Tối đa {slot.max_capacity}
+                      Tối đa {cls.max_capacity}
                     </Badge>
                   </div>
                 ))}

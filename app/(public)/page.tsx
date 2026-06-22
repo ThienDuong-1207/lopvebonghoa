@@ -5,9 +5,8 @@ import RegisterForm from '@/components/public/RegisterForm'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { Users, Palette, Award, Clock, Brush, Star } from 'lucide-react'
-import type { Slot } from '@/lib/types/database'
-
-const DAY_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+import type { Class } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
 const FEATURES = [
   {
@@ -39,12 +38,12 @@ const STATS = [
 
 export default async function HomePage() {
   const supabase = createClient()
-  const { data: slots } = await supabase
-    .from('slots')
-    .select('*')
+  const { data: classes } = await supabase
+    .from('classes')
+    .select('id, name, days_of_week, time_start, time_end')
     .eq('is_active', true)
-    .order('day_of_week')
     .order('time_start')
+    .order('name')
 
   return (
     <>
@@ -163,20 +162,22 @@ export default async function HomePage() {
           <h3 className="mb-5 text-center text-lg font-semibold text-[#0D2545]">
             Các ca học hiện có
           </h3>
-          {(slots ?? []).length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(slots ?? []).map((slot: Slot) => (
+          {(classes ?? []).length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(classes ?? []).map((cls: Pick<Class, 'id' | 'name' | 'days_of_week' | 'time_start' | 'time_end'>) => (
                 <div
-                  key={slot.id}
+                  key={cls.id}
                   className="flex items-center gap-4 rounded-xl border border-[#C9A84C]/20 bg-white px-5 py-4 shadow-sm"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#C9A84C]/10 text-sm font-bold text-[#C9A84C]">
-                    {DAY_SHORT[slot.day_of_week]}
+                    {cls.days_of_week.length === 1
+                      ? ['CN','T2','T3','T4','T5','T6','T7'][cls.days_of_week[0]]
+                      : `${cls.days_of_week.length}N`}
                   </div>
                   <div>
-                    <div className="font-semibold text-[#0D2545]">{slot.name}</div>
-                    <div className="mt-0.5 text-sm text-gray-400">
-                      {slot.time_start.slice(0, 5)} – {slot.time_end.slice(0, 5)}
+                    <div className="font-semibold text-[#0D2545]">{cls.name}</div>
+                    <div className="mt-0.5 text-xs text-gray-400">
+                      {formatDays(cls.days_of_week)} · {cls.time_start.slice(0, 5)}–{cls.time_end.slice(0, 5)}
                     </div>
                   </div>
                 </div>

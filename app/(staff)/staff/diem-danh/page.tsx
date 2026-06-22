@@ -4,11 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
 import CheckinButton from '@/components/staff/CheckinButton'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import type { Slot, Student, Package, Session } from '@/lib/types/database'
+import type { Class, Student, Package, Session } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
-function formatTime(t: string) {
-  return t.slice(0, 5)
-}
+function formatTime(t: string) { return t.slice(0, 5) }
 
 export default async function DiemDanhPage() {
   const supabase = createClient()
@@ -18,41 +17,41 @@ export default async function DiemDanhPage() {
   const todayDow = today.getDay()
   const todayStr = today.toISOString().split('T')[0]
 
-  const { data: slots } = await supabase
-    .from('slots')
+  // Lấy lớp hôm nay của trợ giảng: days_of_week chứa todayDow
+  const { data: classes } = await supabase
+    .from('classes')
     .select('*')
     .eq('assigned_staff_id', profile?.id ?? '')
-    .eq('day_of_week', todayDow)
+    .contains('days_of_week', [todayDow])
     .eq('is_active', true)
 
-  if (!slots || slots.length === 0) {
+  if (!classes || classes.length === 0) {
     return (
       <div className="flex h-[60vh] items-center justify-center p-4 text-center text-gray-400">
         <div>
           <div className="text-4xl">📭</div>
-          <p className="mt-3">Không có ca hôm nay</p>
+          <p className="mt-3">Không có lớp hôm nay</p>
+          <p className="mt-1 text-xs">({formatDays([todayDow])})</p>
         </div>
       </div>
     )
   }
 
-  const slotIds = slots.map((s: Slot) => s.id)
+  const classIds = classes.map((c: Class) => c.id)
 
-  // students + sessions chạy song song, không phụ thuộc nhau
   const [{ data: students }, { data: todaySessions }] = await Promise.all([
-    supabase.from('students').select('*').in('preferred_slot_id', slotIds).eq('status', 'active'),
-    supabase.from('sessions').select('*').in('slot_id', slotIds).eq('session_date', todayStr),
+    supabase.from('students').select('*').in('class_id', classIds).eq('status', 'active'),
+    supabase.from('sessions').select('*').in('class_id', classIds).eq('session_date', todayStr),
   ])
 
-  // packages phụ thuộc vào studentIds nên chạy sau
   const studentIds = (students ?? []).map((s: Student) => s.id)
   const { data: packages } = studentIds.length
     ? await supabase.from('packages').select('*').in('student_id', studentIds).eq('status', 'active')
     : { data: [] }
 
   const checkedIn = (todaySessions ?? []).filter((s: Session) => s.status === 'present').length
-  const absent = (todaySessions ?? []).filter((s: Session) => s.status === 'absent').length
-  const total = (students ?? []).length
+  const absent    = (todaySessions ?? []).filter((s: Session) => s.status === 'absent').length
+  const total     = (students ?? []).length
 
   return (
     <div className="p-4">
@@ -72,22 +71,23 @@ export default async function DiemDanhPage() {
         </div>
       </div>
 
-      {slots.map((slot: Slot) => {
-        const slotStudents = (students ?? []).filter(
-          (s: Student) => s.preferred_slot_id === slot.id
+      {classes.map((cls: Class) => {
+        const classStudents = (students ?? []).filter(
+          (s: Student) => s.class_id === cls.id
         )
 
         return (
-          <div key={slot.id} className="mb-6">
-            <h3 className="mb-3 font-semibold text-[#0D2545]">
-              {slot.name} — {formatTime(slot.time_start)}–{formatTime(slot.time_end)}
+          <div key={cls.id} className="mb-6">
+            <h3 className="mb-1 font-semibold text-[#0D2545]">
+              {cls.name} — {formatTime(cls.time_start)}–{formatTime(cls.time_end)}
             </h3>
+            <p className="mb-3 text-xs text-gray-400">{formatDays(cls.days_of_week)}</p>
 
             <div className="space-y-3">
-              {slotStudents.map((student: Student) => {
+              {classStudents.map((student: Student) => {
                 const pkg = (packages ?? []).find((p: Package) => p.student_id === student.id)
                 const session = (todaySessions ?? []).find(
-                  (s: Session) => s.student_id === student.id && s.slot_id === slot.id
+                  (s: Session) => s.student_id === student.id && s.class_id === cls.id
                 )
                 const initials = student.full_name
                   .split(' ')
@@ -122,7 +122,7 @@ export default async function DiemDanhPage() {
                       <CheckinButton
                         studentId={student.id}
                         packageId={pkg.id}
-                        slotId={slot.id}
+                        classId={cls.id}
                         sessionDate={todayStr}
                         initialStatus={session?.status ?? null}
                         sessionId={session?.id}
@@ -134,9 +134,9 @@ export default async function DiemDanhPage() {
                 )
               })}
 
-              {slotStudents.length === 0 && (
+              {classStudents.length === 0 && (
                 <div className="rounded-xl bg-white py-6 text-center text-sm text-gray-400">
-                  Chưa có học sinh trong ca này
+                  Chưa có học sinh trong lớp này
                 </div>
               )}
             </div>

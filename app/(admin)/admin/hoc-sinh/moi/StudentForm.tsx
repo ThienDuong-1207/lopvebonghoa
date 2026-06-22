@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle } from 'lucide-react'
-import type { Slot, Parent } from '@/lib/types/database'
+import type { Class, Parent } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
 interface Props {
-  slots: Slot[]
+  classes: Class[]
   parents: Pick<Parent, 'id' | 'full_name' | 'phone'>[]
   action: (prev: string | null, formData: FormData) => Promise<string | null>
 }
@@ -26,7 +27,7 @@ function SubmitButton() {
   )
 }
 
-export default function StudentForm({ slots, parents, action }: Props) {
+export default function StudentForm({ classes, parents, action }: Props) {
   const [error, formAction] = useFormState(action, null)
 
   return (
@@ -57,11 +58,13 @@ export default function StudentForm({ slots, parents, action }: Props) {
             <Input name="age" type="number" min={4} max={12} placeholder="6" />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ca học</label>
-            <select name="preferred_slot_id" className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              <option value="">Chưa xác định</option>
-              {slots.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
+            <select name="class_id" className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              <option value="">Chưa xếp lớp</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
+                </option>
               ))}
             </select>
           </div>
@@ -113,7 +116,7 @@ export default function StudentForm({ slots, parents, action }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Địa chỉ</label>
-            <Input name="parent_address" placeholder="123 Đường ABC, Phường X, Quận Y, TP.HCM" />
+            <Input name="parent_address" placeholder="123 Đường ABC, Phường X, Quận Y" />
           </div>
         </div>
       </div>

@@ -8,14 +8,13 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { student_id, package_id, slot_id, session_date, status = 'present', note } = body
+  const { student_id, package_id, class_id, session_date, status = 'present', note } = body
 
-  // Kiểm tra đã điểm danh chưa
   const { data: existing } = await supabase
     .from('sessions')
     .select('id')
     .eq('student_id', student_id)
-    .eq('slot_id', slot_id)
+    .eq('class_id', class_id)
     .eq('session_date', session_date)
     .single()
 
@@ -28,7 +27,7 @@ export async function POST(request: Request) {
     .insert({
       package_id,
       student_id,
-      slot_id,
+      class_id,
       session_date,
       checked_in_by: user.id,
       status,

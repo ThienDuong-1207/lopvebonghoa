@@ -35,12 +35,12 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
 
   const { error: studentErr } = await supabase.from('students').insert({
     full_name: fullName,
-    nickname: (formData.get('nickname') as string)?.trim() || null,
-    age: formData.get('age') ? Number(formData.get('age')) : null,
+    nickname:  (formData.get('nickname') as string)?.trim() || null,
+    age:       formData.get('age') ? Number(formData.get('age')) : null,
     parent_id: parentId,
-    preferred_slot_id: (formData.get('preferred_slot_id') as string) || null,
-    notes: (formData.get('notes') as string)?.trim() || null,
-    status: 'active',
+    class_id:  (formData.get('class_id') as string) || null,
+    notes:     (formData.get('notes') as string)?.trim() || null,
+    status:    'active',
   })
 
   if (studentErr) return `Không thể tạo học sinh: ${studentErr.message}`
@@ -50,8 +50,8 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
 
 export default async function TaoHocSinhPage() {
   const supabase = createClient()
-  const [{ data: slots }, { data: parents }] = await Promise.all([
-    supabase.from('slots').select('*').eq('is_active', true).order('name'),
+  const [{ data: classes }, { data: parents }] = await Promise.all([
+    supabase.from('classes').select('*').eq('is_active', true).order('name'),
     supabase.from('parents').select('id, full_name, phone').order('full_name'),
   ])
 
@@ -60,11 +60,7 @@ export default async function TaoHocSinhPage() {
       <Topbar title="Thêm học sinh mới" backHref="/admin/hoc-sinh" backLabel="Học sinh" />
       <div className="p-6">
         <div className="mx-auto max-w-xl">
-          <StudentForm
-            slots={slots ?? []}
-            parents={parents ?? []}
-            action={createStudent}
-          />
+          <StudentForm classes={classes ?? []} parents={parents ?? []} action={createStudent} />
         </div>
       </div>
     </>

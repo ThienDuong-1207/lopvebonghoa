@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import type { Slot } from '@/lib/types/database'
+import type { Class } from '@/lib/types/database'
+import { formatDays } from '@/lib/types/database'
 
 async function updateStudent(id: string, formData: FormData) {
   'use server'
@@ -16,17 +17,17 @@ async function updateStudent(id: string, formData: FormData) {
   await Promise.all([
     supabase.from('students').update({
       full_name: (formData.get('full_name') as string).trim(),
-      nickname: (formData.get('nickname') as string).trim() || null,
-      age: formData.get('age') ? Number(formData.get('age')) : null,
-      preferred_slot_id: (formData.get('preferred_slot_id') as string) || null,
-      notes: (formData.get('notes') as string).trim() || null,
+      nickname:  (formData.get('nickname') as string).trim() || null,
+      age:       formData.get('age') ? Number(formData.get('age')) : null,
+      class_id:  (formData.get('class_id') as string) || null,
+      notes:     (formData.get('notes') as string).trim() || null,
     }).eq('id', id),
 
     supabase.from('parents').update({
       full_name: (formData.get('parent_name') as string).trim(),
-      phone: (formData.get('parent_phone') as string).trim(),
-      phone_2: (formData.get('parent_phone_2') as string).trim() || null,
-      address: (formData.get('parent_address') as string).trim() || null,
+      phone:     (formData.get('parent_phone') as string).trim(),
+      phone_2:   (formData.get('parent_phone_2') as string).trim() || null,
+      address:   (formData.get('parent_address') as string).trim() || null,
     }).eq('id', formData.get('parent_id') as string),
   ])
 
@@ -36,13 +37,13 @@ async function updateStudent(id: string, formData: FormData) {
 export default async function ChinhSuaHocSinhPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
 
-  const [{ data: student }, { data: slots }] = await Promise.all([
+  const [{ data: student }, { data: classes }] = await Promise.all([
     supabase
       .from('students')
       .select('*, parents(id, full_name, phone, phone_2, address)')
       .eq('id', params.id)
       .single(),
-    supabase.from('slots').select('id, name').eq('is_active', true).order('name'),
+    supabase.from('classes').select('id, name, days_of_week, time_start, time_end').eq('is_active', true).order('name'),
   ])
 
   if (!student) notFound()
@@ -51,11 +52,7 @@ export default async function ChinhSuaHocSinhPage({ params }: { params: { id: st
 
   return (
     <>
-      <Topbar
-        title="Chỉnh sửa học sinh"
-        backHref={`/admin/hoc-sinh/${params.id}`}
-        backLabel={student.full_name}
-      />
+      <Topbar title="Chỉnh sửa học sinh" backHref={`/admin/hoc-sinh/${params.id}`} backLabel={student.full_name} />
       <div className="p-6">
         <div className="mx-auto max-w-xl">
           <form action={boundUpdate} className="space-y-4">
@@ -78,15 +75,17 @@ export default async function ChinhSuaHocSinhPage({ params }: { params: { id: st
                   <Input name="age" type="number" min={4} max={12} defaultValue={student.age ?? ''} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ca học</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
                   <select
-                    name="preferred_slot_id"
-                    defaultValue={student.preferred_slot_id ?? ''}
+                    name="class_id"
+                    defaultValue={student.class_id ?? ''}
                     className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
-                    <option value="">Chưa xác định</option>
-                    {(slots ?? []).map((s: Pick<Slot, 'id' | 'name'>) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                    <option value="">Chưa xếp lớp</option>
+                    {(classes ?? []).map((c: Pick<Class, 'id' | 'name' | 'days_of_week' | 'time_start' | 'time_end'>) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -118,7 +117,7 @@ export default async function ChinhSuaHocSinhPage({ params }: { params: { id: st
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Địa chỉ</label>
-                  <Input name="parent_address" defaultValue={student.parents?.address ?? ''} placeholder="123 Đường ABC, Quận Y, TP.HCM" />
+                  <Input name="parent_address" defaultValue={student.parents?.address ?? ''} placeholder="123 Đường ABC, Quận Y" />
                 </div>
               </div>
             </div>

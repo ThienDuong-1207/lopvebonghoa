@@ -1,63 +1,59 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
+import { formatDays } from '@/lib/types/database'
 
 export async function GET() {
   const supabase = createClient()
-  const { data: slots } = await supabase.from('slots').select('name').eq('is_active', true).order('name')
+  const { data: classes } = await supabase
+    .from('classes')
+    .select('name, days_of_week, time_start, time_end')
+    .eq('is_active', true)
+    .order('name')
+
+  // Sheet 1: Template nhập liệu
+  const templateRows = [
+    {
+      'Họ tên học sinh *': 'Nguyễn Văn An',
+      'Biệt danh':         'An',
+      'Tuổi':              6,
+      'Lớp học':           (classes ?? [])[0]?.name ?? 'Tối 2-4-6 A',
+      'Ghi chú':           'Thích vẽ động vật',
+      'Tên phụ huynh *':   'Nguyễn Thị B',
+      'SĐT Zalo *':        '0901234567',
+      'SĐT phụ':           '0912345678',
+      'Địa chỉ':           '123 Đường ABC, Phường X, Quận Y, TP.HCM',
+    },
+  ]
+
+  const wsTemplate = XLSX.utils.json_to_sheet(templateRows)
+  wsTemplate['!cols'] = [22, 14, 5, 18, 25, 20, 14, 14, 35].map((w) => ({ wch: w }))
+
+  // Sheet 2: Danh sách lớp học để tham khảo
+  const classRows = (classes ?? []).map((c: { name: string; days_of_week: number[]; time_start: string; time_end: string }) => ({
+    'Tên lớp':   c.name,
+    'Lịch học':  formatDays(c.days_of_week),
+    'Giờ học':   `${c.time_start.slice(0,5)}–${c.time_end.slice(0,5)}`,
+  }))
+  const wsClasses = XLSX.utils.json_to_sheet(classRows.length ? classRows : [{ 'Tên lớp': '(Chưa có lớp nào)', 'Lịch học': '', 'Giờ học': '' }])
+  wsClasses['!cols'] = [20, 20, 14].map((w) => ({ wch: w }))
+
+  // Sheet 3: Hướng dẫn
+  const wsGuide = XLSX.utils.aoa_to_sheet([
+    ['HƯỚNG DẪN NHẬP LIỆU'],
+    [''],
+    ['1. Điền dữ liệu vào sheet "Template"'],
+    ['2. Cột có dấu * là bắt buộc'],
+    ['3. Cột "Lớp học": nhập đúng tên lớp theo sheet "Danh sách lớp"'],
+    ['4. Nếu phụ huynh đã có trong hệ thống (cùng SĐT), học sinh sẽ tự được liên kết'],
+    ['5. Học sinh đã tồn tại (cùng tên + phụ huynh) sẽ được CẬP NHẬT, không bị trùng'],
+    ['6. Sau khi điền xong, lưu file và nhập vào hệ thống qua nút "Nhập từ Excel"'],
+  ])
 
   const wb = XLSX.utils.book_new()
-
-  // Sheet 1: template với 3 hàng ví dụ
-  const headers = [
-    'Họ tên học sinh *',
-    'Biệt danh',
-    'Tuổi',
-    'Ca học',
-    'Ghi chú',
-    'Tên phụ huynh *',
-    'SĐT Zalo *',
-    'SĐT phụ',
-    'Địa chỉ',
-  ]
-  const examples = [
-    ['Nguyễn Văn An', 'An', 6, 'Thứ 2 sáng', '', 'Nguyễn Thị Bình', '0901234567', '', '123 Nguyễn Trãi, Q.1, TP.HCM'],
-    ['Trần Thị Bảo', 'Bảo', 5, 'Thứ 4 chiều', 'Thích vẽ màu nước', 'Trần Văn Cường', '0912345678', '0987654321', ''],
-    ['', '', '', '', '', '', '', '', ''],
-  ]
-
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...examples])
-  ws['!cols'] = [
-    { wch: 25 }, { wch: 12 }, { wch: 6 }, { wch: 18 },
-    { wch: 25 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 40 },
-  ]
-  XLSX.utils.book_append_sheet(wb, ws, 'Template')
-
-  // Sheet 2: danh sách ca học
-  const slotRows = [
-    ['Tên ca học (copy chính xác vào cột Ca học)'],
-    ...((slots ?? []).map((s: { name: string }) => [s.name])),
-  ]
-  const wsSlots = XLSX.utils.aoa_to_sheet(slotRows)
-  wsSlots['!cols'] = [{ wch: 30 }]
-  XLSX.utils.book_append_sheet(wb, wsSlots, 'Ca học')
-
-  // Sheet 3: hướng dẫn
-  const guide = XLSX.utils.aoa_to_sheet([
-    ['HƯỚNG DẪN SỬ DỤNG TEMPLATE'],
-    [],
-    ['1. Điền thông tin vào sheet "Template"'],
-    ['2. Cột có dấu * là bắt buộc'],
-    ['3. Tên ca học: copy chính xác từ sheet "Ca học"'],
-    ['4. SĐT Zalo dùng để nhận diện phụ huynh — tránh trùng lặp'],
-    ['5. Upload file vào trang Học sinh → Nhập từ Excel'],
-    [],
-    ['Kết quả sau import:'],
-    ['  • TẠO MỚI: học sinh chưa có trong hệ thống'],
-    ['  • CẬP NHẬT: học sinh đã có (cùng tên + SĐT phụ huynh)'],
-  ])
-  wsSlots['!cols'] = [{ wch: 50 }]
-  XLSX.utils.book_append_sheet(wb, guide, 'Hướng dẫn')
+  XLSX.utils.book_append_sheet(wb, wsTemplate, 'Template')
+  XLSX.utils.book_append_sheet(wb, wsClasses, 'Danh sách lớp')
+  XLSX.utils.book_append_sheet(wb, wsGuide, 'Hướng dẫn')
 
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
 
