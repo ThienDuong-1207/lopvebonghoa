@@ -33,10 +33,13 @@ export default async function HocSinhPage({ searchParams }: Props) {
   if (class_id) query = query.eq('class_id', class_id)
   if (q) query = query.ilike('full_name', `%${q}%`)
 
-  const [{ data: students }, { data: classes }] = await Promise.all([
+  const [{ data: students }, { data: classes }, { data: pendingPkgs }] = await Promise.all([
     query,
     supabase.from('classes').select('id, name, days_of_week').eq('is_active', true).order('name'),
+    supabase.from('packages').select('student_id').eq('payment_status', 'pending').eq('status', 'active'),
   ])
+
+  const unpaidIds = new Set((pendingPkgs ?? []).map((p: { student_id: string }) => p.student_id))
 
   return (
     <>
@@ -96,7 +99,14 @@ export default async function HocSinhPage({ searchParams }: Props) {
               {(students ?? []).map((s: Student & { parents: Pick<Parent, 'full_name' | 'phone'>; classes: Pick<Class, 'name' | 'days_of_week'> | null }) => (
                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-800 dark:text-gray-100">{s.full_name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-gray-800 dark:text-gray-100">{s.full_name}</span>
+                      {unpaidIds.has(s.id) && (
+                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                          Nợ
+                        </span>
+                      )}
+                    </div>
                     {s.nickname && <div className="text-xs text-gray-400">"{s.nickname}"</div>}
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.parents?.full_name}</td>

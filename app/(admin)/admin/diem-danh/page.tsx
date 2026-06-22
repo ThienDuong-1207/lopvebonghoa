@@ -17,6 +17,7 @@ interface MakeupEntry {
   package_id: string
   used_sessions: number
   total_sessions: number
+  payment_status: 'paid' | 'pending'
   sessionId?: string
   sessionStatus: 'present' | 'absent' | 'makeup' | null
 }
@@ -78,7 +79,7 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
 
     if (makeupIds.length > 0) {
       const [{ data: mPkgs }, { data: mSessions }] = await Promise.all([
-        supabase.from('packages').select('id, student_id, used_sessions, total_sessions')
+        supabase.from('packages').select('id, student_id, used_sessions, total_sessions, payment_status')
           .in('student_id', makeupIds).eq('status', 'active'),
         supabase.from('sessions').select('id, student_id, status')
           .eq('class_id', selectedClassId).eq('session_date', selectedDate)
@@ -91,15 +92,16 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
           if (!pkg) return null
           const sess = (mSessions ?? []).find((ms: { student_id: string }) => ms.student_id === s.id)
           return {
-            id:            s.id,
-            full_name:     s.full_name,
-            nickname:      s.nickname,
-            class_id:      s.class_id,
-            package_id:    pkg.id,
-            used_sessions: pkg.used_sessions,
+            id:             s.id,
+            full_name:      s.full_name,
+            nickname:       s.nickname,
+            class_id:       s.class_id,
+            package_id:     pkg.id,
+            used_sessions:  pkg.used_sessions,
             total_sessions: pkg.total_sessions,
-            sessionId:     sess?.id,
-            sessionStatus: (sess?.status ?? null) as 'present' | 'absent' | 'makeup' | null,
+            payment_status: (pkg.payment_status ?? 'paid') as 'paid' | 'pending',
+            sessionId:      sess?.id,
+            sessionStatus:  (sess?.status ?? null) as 'present' | 'absent' | 'makeup' | null,
           }
         })
         .filter(Boolean) as MakeupEntry[]
@@ -202,9 +204,16 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
                           {initials}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-800 dark:text-gray-100">
-                            {student.nickname ?? student.full_name}
-                            {student.nickname && <span className="ml-1.5 text-xs text-gray-400">({student.full_name})</span>}
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-gray-800 dark:text-gray-100">
+                              {student.nickname ?? student.full_name}
+                            </span>
+                            {student.nickname && <span className="text-xs text-gray-400">({student.full_name})</span>}
+                            {pkg?.payment_status === 'pending' && (
+                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                Nợ
+                              </span>
+                            )}
                           </div>
                           {pkg ? (
                             <div className="text-xs text-gray-400">
@@ -266,9 +275,16 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
                             {initials}
                           </div>
                           <div>
-                            <div className="font-medium text-gray-800 dark:text-gray-100">
-                              {m.nickname ?? m.full_name}
-                              {m.nickname && <span className="ml-1.5 text-xs text-gray-400">({m.full_name})</span>}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-gray-800 dark:text-gray-100">
+                                {m.nickname ?? m.full_name}
+                              </span>
+                              {m.nickname && <span className="text-xs text-gray-400">({m.full_name})</span>}
+                              {m.payment_status === 'pending' && (
+                                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                  Nợ
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-gray-400">
                               Lớp: {hostClass?.name ?? '—'} · Buổi {m.used_sessions}/{m.total_sessions}

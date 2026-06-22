@@ -154,8 +154,15 @@ export default async function DiemDanhPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-gray-800">
-                          {student.nickname ?? student.full_name}
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-gray-800">
+                            {student.nickname ?? student.full_name}
+                          </span>
+                          {pkg?.payment_status === 'pending' && (
+                            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                              Nợ
+                            </span>
+                          )}
                         </div>
                         {pkg && (
                           <div className="text-xs text-gray-400">
