@@ -7,20 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import type { Profile } from '@/lib/types/database'
-import { DAY_SHORT, SCHEDULE_PRESETS, detectPreset } from '@/lib/types/database'
 
-const PRESET_DAYS: Record<string, number[]> = {
-  '246': [1, 3, 5],
-  '357': [2, 4, 6],
-  '7':   [6],
-  'CN':  [0],
-}
+const DAYS_OPTIONS = [
+  { dow: 1, label: 'T2' }, { dow: 2, label: 'T3' }, { dow: 3, label: 'T4' },
+  { dow: 4, label: 'T5' }, { dow: 5, label: 'T6' }, { dow: 6, label: 'T7' },
+  { dow: 0, label: 'CN' },
+]
 
 async function updateClass(id: string, formData: FormData) {
   'use server'
   const supabase = createClient()
-  const preset = formData.get('schedule_preset') as string
-  const days = PRESET_DAYS[preset] ?? [6]
+  const days = formData.getAll('days_of_week').map(Number)
+  if (days.length === 0) redirect(`/admin/lich-hoc/${id}?error=no_days`)
 
   await supabase.from('classes').update({
     name:              (formData.get('name') as string).trim(),
@@ -44,7 +42,6 @@ export default async function EditClassPage({ params }: { params: { id: string }
 
   if (!cls) notFound()
 
-  const currentPreset = detectPreset(cls.days_of_week)
   const boundUpdate = updateClass.bind(null, params.id)
 
   return (
@@ -59,24 +56,25 @@ export default async function EditClassPage({ params }: { params: { id: string }
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lịch học *</label>
-              <select
-                name="schedule_preset"
-                required
-                defaultValue={currentPreset !== 'custom' ? currentPreset : '246'}
-                className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
-              >
-                {SCHEDULE_PRESETS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label} ({p.days.map((d) => DAY_SHORT[d]).join(', ')})
-                  </option>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Ngày học * <span className="font-normal text-gray-400 text-xs">(chọn 1 hoặc nhiều ngày)</span>
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {DAYS_OPTIONS.map(({ dow, label }) => (
+                  <label key={dow} className="relative flex cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      name="days_of_week"
+                      value={dow}
+                      defaultChecked={cls.days_of_week.includes(dow)}
+                      className="peer sr-only"
+                    />
+                    <span className="flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 text-xs font-semibold text-gray-500 transition-colors peer-checked:border-[#0D2545] peer-checked:bg-[#0D2545] peer-checked:text-white dark:border-gray-600 dark:text-gray-400 dark:peer-checked:border-[#C9A84C] dark:peer-checked:bg-[#C9A84C]/20 dark:peer-checked:text-[#C9A84C]">
+                      {label}
+                    </span>
+                  </label>
                 ))}
-              </select>
-              {currentPreset === 'custom' && (
-                <p className="mt-1 text-xs text-amber-500">
-                  Lớp hiện có lịch tùy chỉnh ({cls.days_of_week.map((d: number) => DAY_SHORT[d]).join(', ')}) — sẽ được chuyển về preset khi lưu.
-                </p>
-              )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

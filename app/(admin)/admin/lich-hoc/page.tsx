@@ -3,30 +3,26 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import Topbar from '@/components/admin/Topbar'
 import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Pencil, UserRound, Users } from 'lucide-react'
 import Link from 'next/link'
 import DeleteClassButton from '@/components/admin/DeleteClassButton'
-import type { Class, Profile } from '@/lib/types/database'
-import { DAY_SHORT, SCHEDULE_PRESETS, formatDays } from '@/lib/types/database'
+import ClassCreateForm from '@/components/admin/ClassCreateForm'
+import type { Class } from '@/lib/types/database'
+import { DAY_SHORT } from '@/lib/types/database'
 
-const PRESET_DAYS: Record<string, number[]> = {
-  '246': [1, 3, 5],
-  '357': [2, 4, 6],
-  '7':   [6],
-  'CN':  [0],
-}
-
-async function createClass(formData: FormData) {
+async function createClass(_prev: string | null, formData: FormData): Promise<string | null> {
   'use server'
   const supabase = createClient()
-  const preset = formData.get('schedule_preset') as string
-  const days = PRESET_DAYS[preset] ?? [6]
 
-  await supabase.from('classes').insert({
-    name:              (formData.get('name') as string).trim(),
+  const name = (formData.get('name') as string)?.trim()
+  if (!name) return 'Vui lòng nhập tên lớp.'
+
+  const days = formData.getAll('days_of_week').map(Number)
+  if (days.length === 0) return 'Vui lòng chọn ít nhất một ngày học.'
+
+  const { error } = await supabase.from('classes').insert({
+    name,
     days_of_week:      days,
     time_start:        formData.get('time_start') as string,
     time_end:          formData.get('time_end') as string,
@@ -34,6 +30,8 @@ async function createClass(formData: FormData) {
     assigned_staff_id: (formData.get('assigned_staff_id') as string) || null,
     is_active:         true,
   })
+
+  if (error) return `Không thể tạo lớp: ${error.message}`
   redirect('/admin/lich-hoc')
 }
 
@@ -169,55 +167,7 @@ export default async function LichHocPage() {
           {/* Form tạo lớp mới */}
           <div>
             <h3 className="mb-4 font-semibold dark:text-gray-100">Tạo lớp học mới</h3>
-            <form action={createClass} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tên lớp *</label>
-                <Input name="name" required placeholder="VD: Tối 2-4-6 A" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Lịch học *</label>
-                <select
-                  name="schedule_preset"
-                  required
-                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                >
-                  {SCHEDULE_PRESETS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label} ({p.days.map((d) => DAY_SHORT[d]).join(', ')})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Giờ bắt đầu</label>
-                  <Input name="time_start" type="time" defaultValue="17:00" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Giờ kết thúc</label>
-                  <Input name="time_end" type="time" defaultValue="19:00" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Sĩ số tối đa</label>
-                <Input name="max_capacity" type="number" defaultValue={10} min={1} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Trợ giảng phụ trách</label>
-                <select
-                  name="assigned_staff_id"
-                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                >
-                  <option value="">Chưa phân công</option>
-                  {(staffList ?? []).map((s: Pick<Profile, 'id' | 'full_name'>) => (
-                    <option key={s.id} value={s.id}>{s.full_name}</option>
-                  ))}
-                </select>
-              </div>
-              <Button type="submit" className="w-full bg-[#0D2545] text-white hover:bg-[#0D2545]/90">
-                Tạo lớp học
-              </Button>
-            </form>
+            <ClassCreateForm action={createClass} staffList={staffList ?? []} />
           </div>
         </div>
       </div>
