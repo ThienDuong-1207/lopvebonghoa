@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 
 interface Props {
   studentId: string
@@ -29,17 +29,14 @@ export default function CheckinButton({
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
-  async function toggle() {
-    if (loading) return
+  async function select(next: 'present' | 'absent') {
+    if (loading || status === next) return
     setLoading(true)
-
-    const nextStatus = status === 'present' ? 'absent' : 'present'
-
     try {
       if (currentSessionId) {
         const { error } = await supabase
           .from('sessions')
-          .update({ status: nextStatus })
+          .update({ status: next })
           .eq('id', currentSessionId)
         if (error) throw error
       } else {
@@ -51,44 +48,53 @@ export default function CheckinButton({
             class_id:      classId,
             session_date:  sessionDate,
             checked_in_by: profileId,
-            status:        nextStatus,
+            status:        next,
           })
           .select('id')
           .single()
         if (error) throw error
         setCurrentSessionId(data?.id)
       }
-
-      setStatus(nextStatus)
-      if (nextStatus === 'present') {
-        toast.success('Có mặt ✓')
-      } else {
-        toast('Đã ghi nhận vắng', { icon: '✗' })
-      }
+      setStatus(next)
+      if (next === 'present') toast.success('Có mặt ✓')
+      else toast('Vắng', { icon: '✗' })
     } catch {
-      toast.error('Có lỗi xảy ra, thử lại.')
+      toast.error('Có lỗi, thử lại.')
     }
-
     setLoading(false)
   }
 
-  const isPresent = status === 'present'
+  const btnBase = 'flex h-11 w-11 items-center justify-center rounded-xl transition-all active:scale-95 disabled:opacity-40'
 
   return (
-    <button
-      onClick={toggle}
-      disabled={loading}
-      className={`flex min-w-[90px] items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all disabled:opacity-60 ${
-        isPresent
-          ? 'bg-emerald-500 text-white shadow-sm'
-          : status === 'absent'
-          ? 'bg-red-100 text-red-400 hover:bg-emerald-100 hover:text-emerald-600'
-          : 'bg-gray-100 text-gray-400 hover:bg-emerald-100 hover:text-emerald-600'
-      }`}
-      title={isPresent ? 'Bấm để đánh dấu vắng' : 'Bấm để điểm danh'}
-    >
-      {isPresent && <Check className="h-4 w-4" strokeWidth={2.5} />}
-      {isPresent ? 'Có mặt' : status === 'absent' ? 'Vắng' : 'Chưa điểm'}
-    </button>
+    <div className="flex shrink-0 gap-1.5">
+      {/* Có mặt */}
+      <button
+        onClick={() => select('present')}
+        disabled={loading}
+        aria-label="Có mặt"
+        className={`${btnBase} ${
+          status === 'present'
+            ? 'bg-emerald-500 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-400 active:bg-emerald-100 active:text-emerald-600'
+        }`}
+      >
+        <Check className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+
+      {/* Vắng */}
+      <button
+        onClick={() => select('absent')}
+        disabled={loading}
+        aria-label="Vắng"
+        className={`${btnBase} ${
+          status === 'absent'
+            ? 'bg-red-400 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-400 active:bg-red-100 active:text-red-400'
+        }`}
+      >
+        <X className="h-5 w-5" strokeWidth={2.5} />
+      </button>
+    </div>
   )
 }
