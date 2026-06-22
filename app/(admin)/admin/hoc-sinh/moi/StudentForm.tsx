@@ -10,6 +10,7 @@ import type { Class, Parent } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
 
 const CURRENT_YEAR = new Date().getFullYear()
+const TODAY = new Date().toISOString().split('T')[0]
 
 interface Props {
   classes: Class[]
@@ -122,6 +123,15 @@ export default function StudentForm({ classes, parents, action }: Props) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Ngày bắt đầu học */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Ngày bắt đầu học
+              <span className="ml-1.5 text-xs font-normal text-gray-400">(quan trọng với data cũ)</span>
+            </label>
+            <Input name="enrolled_at" type="date" defaultValue={TODAY} max={TODAY} />
           </div>
 
           <div>

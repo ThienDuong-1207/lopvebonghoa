@@ -40,15 +40,18 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
     age = new Date().getFullYear() - birthYear
   }
 
+  const enrolledAt = (formData.get('enrolled_at') as string) || new Date().toISOString().split('T')[0]
+
   const { error: studentErr } = await supabase.from('students').insert({
-    full_name:  fullName,
-    nickname:   (formData.get('nickname') as string)?.trim() || null,
-    birth_year: birthYear,
+    full_name:   fullName,
+    nickname:    (formData.get('nickname') as string)?.trim() || null,
+    birth_year:  birthYear,
     age,
-    parent_id:  parentId,
-    class_id:   (formData.get('class_id') as string) || null,
-    notes:      (formData.get('notes') as string)?.trim() || null,
-    status:     'active',
+    parent_id:   parentId,
+    class_id:    (formData.get('class_id') as string) || null,
+    notes:       (formData.get('notes') as string)?.trim() || null,
+    status:      'active',
+    enrolled_at: enrolledAt,
   })
 
   if (studentErr) return `Không thể tạo học sinh: ${studentErr.message}`
