@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { AlertCircle } from 'lucide-react'
 import type { Student, Package } from '@/lib/types/database'
 import MarkPaidButton from './MarkPaidButton'
+import DeletePackageButton from './DeletePackageButton'
 
 const STATUS_LABEL: Record<string, string> = { active: 'Đang học', completed: 'Hết gói', cancelled: 'Huỷ' }
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -65,7 +66,7 @@ export default async function ThanhToanPage({ searchParams }: Props) {
   const [{ data: students }, { data: recentPackages }] = await Promise.all([
     supabase.from('students').select('id, full_name').eq('status', 'active').order('full_name'),
     supabase.from('packages')
-      .select('*, students(full_name)')
+      .select('*, students(id, full_name), sessions(id)')
       .order('created_at', { ascending: false })
       .limit(50),
   ])
@@ -172,7 +173,7 @@ export default async function ThanhToanPage({ searchParams }: Props) {
               )}
             </div>
             <div className="space-y-2.5">
-              {(recentPackages ?? []).map((p: Package & { students: { full_name: string } }) => (
+              {(recentPackages ?? []).map((p: Package & { students: { id: string; full_name: string }; sessions: { id: string }[] }) => (
                 <div
                   key={p.id}
                   className={`rounded-xl border bg-white px-4 py-3 dark:bg-gray-800 ${
@@ -193,7 +194,17 @@ export default async function ThanhToanPage({ searchParams }: Props) {
                       {p.note && <div className="text-xs text-gray-400">{p.note}</div>}
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <Badge variant={STATUS_VARIANT[p.status]}>{STATUS_LABEL[p.status]}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={STATUS_VARIANT[p.status]}>{STATUS_LABEL[p.status]}</Badge>
+                        <DeletePackageButton
+                          packageId={p.id}
+                          studentId={p.students?.id}
+                          studentName={p.students?.full_name}
+                          sessionCount={p.sessions?.length ?? 0}
+                          amountPaid={p.amount_paid}
+                          paymentStatus={p.payment_status as 'paid' | 'pending'}
+                        />
+                      </div>
                       <span className="text-xs text-gray-400">{p.used_sessions}/{p.total_sessions} buổi</span>
                       {p.payment_status === 'pending' && p.status === 'active' && (
                         <MarkPaidButton packageId={p.id} />
