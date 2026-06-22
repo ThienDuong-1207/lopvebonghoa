@@ -26,12 +26,14 @@ export default async function LichCaPage({ searchParams }: Props) {
   const { data: classes } = await supabase
     .from('classes')
     .select('*')
-    .eq('assigned_staff_id', profile?.id ?? '')
     .eq('is_active', true)
     .order('time_start')
     .order('name')
 
-  const allClassIds = (classes ?? []).map((c: Class) => c.id)
+  // ID các lớp được phân công cho staff này (để đánh dấu)
+  const assignedIds = new Set(
+    (classes ?? []).filter((c: Class) => c.assigned_staff_id === profile?.id).map((c: Class) => c.id)
+  )
 
   // Lớp hiển thị: lọc theo ngày được chọn
   const visibleClasses = (classes ?? []).filter((c: Class) =>
@@ -134,7 +136,7 @@ export default async function LichCaPage({ searchParams }: Props) {
         <div className="flex h-[50vh] items-center justify-center text-center text-gray-400">
           <div>
             <CalendarDays className="mx-auto h-10 w-10 text-gray-200" />
-            <p className="mt-3 text-sm">Chưa được phân công lớp nào</p>
+            <p className="mt-3 text-sm">Chưa có lớp nào</p>
           </div>
         </div>
       ) : visibleClasses.length === 0 ? (
@@ -159,7 +161,14 @@ export default async function LichCaPage({ searchParams }: Props) {
                 {/* Class header */}
                 <div className="flex items-center justify-between p-4">
                   <div>
-                    <div className="font-semibold text-[#0D2545]">{cls.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-[#0D2545]">{cls.name}</span>
+                      {assignedIds.has(cls.id) && (
+                        <span className="rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
+                          Lớp của bạn
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-0.5 text-sm text-gray-400">
                       {formatTime(cls.time_start)} – {formatTime(cls.time_end)}
                     </div>
