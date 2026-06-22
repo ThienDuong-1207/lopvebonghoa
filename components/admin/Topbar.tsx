@@ -1,4 +1,5 @@
 import { getAuthUser, getProfile } from '@/lib/supabase/queries'
+import { createClient } from '@/lib/supabase/server'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from 'next/link'
 import { ChevronLeft, Bell } from 'lucide-react'
@@ -12,7 +13,14 @@ interface TopbarProps {
 }
 
 export default async function Topbar({ title, subtitle, backHref, backLabel }: TopbarProps) {
-  const [user, profile] = await Promise.all([getAuthUser(), getProfile()])
+  const supabase = createClient()
+  const [user, profile, alertsRes] = await Promise.all([
+    getAuthUser(),
+    getProfile(),
+    supabase.from('alerts').select('id', { count: 'exact', head: true }).eq('resolved', false),
+  ])
+
+  const alertCount = alertsRes.count ?? 0
 
   const initials = profile?.full_name
     ?.split(' ')
@@ -41,9 +49,17 @@ export default async function Topbar({ title, subtitle, backHref, backLabel }: T
         <ThemeToggle />
 
         {/* Notification bell */}
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200">
+        <Link
+          href="/admin/canh-bao"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+        >
           <Bell className="h-5 w-5" />
-        </button>
+          {alertCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+              {alertCount > 99 ? '99+' : alertCount}
+            </span>
+          )}
+        </Link>
 
         {/* User */}
         <div className="flex items-center gap-3">

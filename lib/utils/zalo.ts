@@ -5,16 +5,17 @@ interface ZaloParams {
   parentName: string
   childName: string
   sessionsUsed: number
+  sessionsTotal: number
   sessionsLeft: number
   alertType: AlertTemplate
 }
 
 export function buildZaloContent(p: ZaloParams): string {
   if (p.alertType === 'package_ended') {
-    return `Chào ${p.parentName} ạ, bé ${p.childName} đã học xong 8 buổi rồi ạ. Anh/Chị có muốn đăng ký tiếp cho bé không ạ? Học phí 1.200.000đ/8 buổi ạ.`
+    return `Chào ${p.parentName} ạ, bé ${p.childName} đã học xong ${p.sessionsTotal} buổi rồi ạ. Anh/Chị có muốn đăng ký tiếp cho bé không ạ?`
   }
   if (p.alertType === 'near_end') {
-    return `Chào ${p.parentName} ạ, bé ${p.childName} đang học buổi ${p.sessionsUsed}/8 rồi ạ. Khi bé học hết gói mình có thể đóng tiếp để bé học liên mạch nhé.`
+    return `Chào ${p.parentName} ạ, bé ${p.childName} đang học buổi ${p.sessionsUsed}/${p.sessionsTotal} rồi ạ. Khi bé học hết gói mình có thể đóng tiếp để bé học liên mạch nhé.`
   }
   return `Chào ${p.parentName} ạ, lâu rồi không thấy bé ${p.childName} đến vẽ. Bé còn ${p.sessionsLeft} buổi trong gói, mình nhớ bé lắm ạ.`
 }

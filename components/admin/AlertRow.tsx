@@ -12,6 +12,7 @@ interface Props {
   parentName: string
   parentPhone: string
   sessionsUsed: number
+  sessionsTotal: number
   sessionsLeft: number
   zaloSentAt: string | null
   resolved: boolean
@@ -37,6 +38,7 @@ export default function AlertRow({
   parentName,
   parentPhone,
   sessionsUsed,
+  sessionsTotal,
   sessionsLeft,
   zaloSentAt,
   resolved,
@@ -49,6 +51,7 @@ export default function AlertRow({
     parentName,
     childName: studentName,
     sessionsUsed,
+    sessionsTotal,
     sessionsLeft,
     alertType: type as 'package_ended' | 'near_end' | 'inactive',
   })

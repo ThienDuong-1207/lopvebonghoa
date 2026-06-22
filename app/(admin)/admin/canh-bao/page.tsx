@@ -59,6 +59,7 @@ export default async function CanhBaoPage() {
             }
           }) => {
             const pkg = alert.students.packages.find((p) => p.status === 'active')
+              ?? alert.students.packages.find((p) => p.status === 'completed')
             return (
               <AlertRow
                 key={alert.id}
@@ -67,7 +68,8 @@ export default async function CanhBaoPage() {
                 studentName={alert.students.full_name}
                 parentName={alert.students.parents?.full_name ?? ''}
                 parentPhone={alert.students.parents?.phone ?? ''}
-                sessionsUsed={pkg?.used_sessions ?? 8}
+                sessionsUsed={pkg?.used_sessions ?? 0}
+                sessionsTotal={pkg?.total_sessions ?? 8}
                 sessionsLeft={pkg ? pkg.total_sessions - pkg.used_sessions : 0}
                 zaloSentAt={alert.zalo_sent_at}
                 resolved={alert.resolved}
