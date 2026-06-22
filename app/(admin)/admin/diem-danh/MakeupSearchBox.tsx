@@ -134,9 +134,9 @@ export default function MakeupSearchBox({ classId, sessionDate, profileId, exclu
   }
 
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-800/40 dark:bg-gray-800">
+    <div className="mt-4 rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-800/40 dark:bg-gray-800">
       {/* Header */}
-      <div className="border-b border-amber-100 bg-amber-50 px-5 py-3 dark:border-amber-800/30 dark:bg-amber-900/20">
+      <div className="rounded-t-2xl border-b border-amber-100 bg-amber-50 px-5 py-3 dark:border-amber-800/30 dark:bg-amber-900/20">
         <h3 className="font-semibold text-amber-700 dark:text-amber-400">Học bù tại buổi này</h3>
         <p className="text-xs text-amber-600/70 dark:text-amber-500/70">
           Tìm học sinh lớp khác đến học bù — buổi sẽ được tính vào gói của học sinh đó
