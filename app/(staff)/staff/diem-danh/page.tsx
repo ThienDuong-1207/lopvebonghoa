@@ -83,10 +83,13 @@ export default async function DiemDanhPage({ searchParams }: Props) {
     }
   }
 
-  // Thống kê nhanh
-  const presentCount = sessions.filter((s) => s.status === 'present' || s.status === 'makeup').length
-  const absentCount  = sessions.filter((s) => s.status === 'absent').length
-  const totalCount   = students.filter((s) => packages.some((p) => p.student_id === s.id)).length
+  // Thống kê — chỉ tính học sinh có gói học
+  const eligibleStudentIds = new Set(packages.map((p) => p.student_id))
+  const eligibleStudents   = students.filter((s) => eligibleStudentIds.has(s.id))
+  const totalCount   = eligibleStudents.length
+  const presentCount = sessions.filter((s) => eligibleStudentIds.has(s.student_id) && (s.status === 'present' || s.status === 'makeup')).length
+  const absentCount  = sessions.filter((s) => eligibleStudentIds.has(s.student_id) && s.status === 'absent').length
+  const pendingCount = totalCount - presentCount - absentCount
 
   return (
     <div className="p-4">
@@ -124,37 +127,40 @@ export default async function DiemDanhPage({ searchParams }: Props) {
         })}
       </div>
 
-      {/* ── Header: ngày + đếm ── */}
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-            {DAY_FULL[selectedDow]}
-            {selectedDow === todayDow && (
-              <span className="ml-2 rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
-                Hôm nay
-              </span>
-            )}
-          </h2>
-          <p className="text-xs text-gray-400">{selectedDateStr}</p>
-        </div>
-
-        {totalCount > 0 && (
-          <div className="flex gap-3 text-center">
-            <div>
-              <div className="text-base font-bold text-emerald-600">{presentCount}</div>
-              <div className="text-[11px] text-gray-400">Có mặt</div>
-            </div>
-            <div>
-              <div className="text-base font-bold text-red-400">{absentCount}</div>
-              <div className="text-[11px] text-gray-400">Vắng</div>
-            </div>
-            <div>
-              <div className="text-base font-bold text-gray-400">{totalCount - presentCount - absentCount}</div>
-              <div className="text-[11px] text-gray-400">Chưa</div>
-            </div>
-          </div>
-        )}
+      {/* ── Header: ngày ── */}
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {DAY_FULL[selectedDow]}
+          {selectedDow === todayDow && (
+            <span className="ml-2 rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
+              Hôm nay
+            </span>
+          )}
+        </h2>
+        <p className="text-xs text-gray-400">{selectedDateStr}</p>
       </div>
+
+      {/* ── Stat bar ── */}
+      {totalCount > 0 && (
+        <div className="mb-3 grid grid-cols-4 gap-2">
+          <div className="rounded-xl bg-white px-3 py-2.5 text-center shadow-sm">
+            <div className="text-lg font-bold text-[#0D2545]">{totalCount}</div>
+            <div className="text-[11px] text-gray-400">Tổng</div>
+          </div>
+          <div className="rounded-xl bg-emerald-50 px-3 py-2.5 text-center shadow-sm">
+            <div className="text-lg font-bold text-emerald-600">{presentCount}</div>
+            <div className="text-[11px] text-emerald-500">Có mặt</div>
+          </div>
+          <div className="rounded-xl bg-red-50 px-3 py-2.5 text-center shadow-sm">
+            <div className="text-lg font-bold text-red-400">{absentCount}</div>
+            <div className="text-[11px] text-red-400">Vắng</div>
+          </div>
+          <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-center shadow-sm">
+            <div className="text-lg font-bold text-gray-400">{pendingCount}</div>
+            <div className="text-[11px] text-gray-400">Chưa</div>
+          </div>
+        </div>
+      )}
 
       {/* ── Danh sách học sinh ── */}
       {classesForDay.length === 0 ? (
