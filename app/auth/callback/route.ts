@@ -21,6 +21,8 @@ export async function GET(request: Request) {
         )
 
         // Tự động link auth_user_id nếu chưa có (lần đăng nhập đầu tiên)
+        // Dùng ilike để tránh lỗi hoa thường (admin gõ khác Google trả về)
+        const email = user.email!.toLowerCase()
         await admin
           .from('profiles')
           .update({
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
             full_name: user.user_metadata?.full_name || user.email || 'User',
             avatar_url: user.user_metadata?.avatar_url || null,
           })
-          .eq('email', user.email!)
+          .ilike('email', email)
           .eq('is_active', true)
           .is('auth_user_id', null)
 

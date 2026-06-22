@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdmin } from '@supabase/supabase-js'
 import Topbar from '@/components/admin/Topbar'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,24 +13,38 @@ import { formatDays } from '@/lib/types/database'
 async function createStaff(formData: FormData) {
   'use server'
   const supabase = createClient()
-  await supabase.from('profiles').insert({
-    email: formData.get('email') as string,
-    full_name: formData.get('full_name') as string,
+  const email = (formData.get('email') as string).trim().toLowerCase()
+  const { error } = await supabase.from('profiles').insert({
+    email,
+    full_name: (formData.get('full_name') as string).trim(),
     role: 'staff',
-    phone: (formData.get('phone') as string) || null,
+    phone: (formData.get('phone') as string).trim() || null,
     is_active: true,
   })
-  redirect('/admin/staff')
+  if (error) redirect(`/admin/staff?error=${encodeURIComponent(error.message)}`)
+  redirect('/admin/staff?ok=1')
 }
 
-async function toggleStaff(id: string, isActive: boolean) {
+async function toggleStaff(id: string, isActive: boolean, authUserId: string | null) {
   'use server'
   const supabase = createClient()
   await supabase.from('profiles').update({ is_active: !isActive }).eq('id', id)
+
+  // Khi khóa: thu hồi session ngay lập tức, không chờ cookie hết hạn
+  if (isActive && authUserId) {
+    const admin = createAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    await admin.auth.admin.signOut(authUserId, 'global')
+  }
+
   redirect('/admin/staff')
 }
 
-export default async function StaffManagePage() {
+interface Props { searchParams: { error?: string; ok?: string } }
+
+export default async function StaffManagePage({ searchParams }: Props) {
   const supabase = createClient()
 
   const [{ data: staffList }, { data: classes }] = await Promise.all([
@@ -94,7 +109,7 @@ export default async function StaffManagePage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3">
-                          <form action={toggleStaff.bind(null, s.id, s.is_active)}>
+                          <form action={toggleStaff.bind(null, s.id, s.is_active, s.auth_user_id ?? null)}>
                             <button className="text-xs text-gray-400 hover:text-[#0D2545] dark:hover:text-[#C9A84C]">
                               {s.is_active ? 'Khóa' : 'Mở khóa'}
                             </button>
@@ -118,6 +133,18 @@ export default async function StaffManagePage() {
           {/* Form thêm staff */}
           <div>
             <h3 className="mb-4 font-semibold dark:text-gray-100">Thêm trợ giảng mới</h3>
+
+            {searchParams.error && (
+              <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                {searchParams.error}
+              </div>
+            )}
+            {searchParams.ok && (
+              <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400">
+                ✓ Đã thêm trợ giảng thành công
+              </div>
+            )}
+
             <form action={createStaff} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">Gmail *</label>

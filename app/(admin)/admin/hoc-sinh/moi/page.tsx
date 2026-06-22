@@ -33,19 +33,17 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
     parentId = newParent.id
   }
 
-  const birthDate = (formData.get('birth_date') as string) || null
+  const birthYearRaw = formData.get('birth_year') as string
+  const birthYear = birthYearRaw ? Number(birthYearRaw) : null
   let age: number | null = formData.get('age') ? Number(formData.get('age')) : null
-  if (birthDate && !age) {
-    const birth = new Date(birthDate)
-    const today = new Date()
-    age = today.getFullYear() - birth.getFullYear()
-    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
+  if (birthYear && !age) {
+    age = new Date().getFullYear() - birthYear
   }
 
   const { error: studentErr } = await supabase.from('students').insert({
     full_name:  fullName,
     nickname:   (formData.get('nickname') as string)?.trim() || null,
-    birth_date: birthDate,
+    birth_year: birthYear,
     age,
     parent_id:  parentId,
     class_id:   (formData.get('class_id') as string) || null,

@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
 import CheckinButton from '@/components/staff/CheckinButton'
+import MakeupCheckin from '@/components/staff/MakeupCheckin'
+import type { MakeupStudent } from '@/components/staff/MakeupCheckin'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
@@ -45,9 +47,53 @@ export default async function DiemDanhPage() {
   ])
 
   const studentIds = (students ?? []).map((s: Student) => s.id)
-  const { data: packages } = studentIds.length
-    ? await supabase.from('packages').select('*').in('student_id', studentIds).eq('status', 'active')
-    : { data: [] }
+
+  // Parallel: gói của học sinh hôm nay + học sinh học bù (không trong lớp hôm nay)
+  const packagesQuery = studentIds.length
+    ? supabase.from('packages').select('*').in('student_id', studentIds).eq('status', 'active')
+    : Promise.resolve({ data: [] })
+
+  let makeupStudentsQuery = supabase
+    .from('students')
+    .select('id, full_name, nickname, class_id')
+    .eq('status', 'active')
+  if (studentIds.length > 0) {
+    makeupStudentsQuery = makeupStudentsQuery.not('id', 'in', `(${studentIds.join(',')})`)
+  }
+
+  const [{ data: packages }, { data: makeupRaw }] = await Promise.all([
+    packagesQuery,
+    makeupStudentsQuery,
+  ])
+
+  const makeupIds = (makeupRaw ?? []).map((s: { id: string }) => s.id)
+  const [{ data: makeupPackages }, { data: makeupSessionsToday }] = await (
+    makeupIds.length
+      ? Promise.all([
+          supabase.from('packages').select('id, student_id, used_sessions, total_sessions').in('student_id', makeupIds).eq('status', 'active'),
+          supabase.from('sessions').select('student_id').in('student_id', makeupIds).eq('session_date', todayStr).eq('status', 'makeup'),
+        ])
+      : Promise.resolve([{ data: [] }, { data: [] }])
+  )
+
+  const alreadyMadeUp = new Set((makeupSessionsToday ?? []).map((s: { student_id: string }) => s.student_id))
+
+  const makeupCandidates: MakeupStudent[] = (makeupRaw ?? [])
+    .map((s: { id: string; full_name: string; nickname: string | null; class_id: string | null }) => {
+      const pkg = (makeupPackages ?? []).find((p: { student_id: string }) => p.student_id === s.id)
+      if (!pkg) return null
+      return {
+        id:            s.id,
+        full_name:     s.full_name,
+        nickname:      s.nickname,
+        class_id:      s.class_id,
+        package_id:    pkg.id,
+        used_sessions: pkg.used_sessions,
+        total_sessions: pkg.total_sessions,
+        alreadyDone:   alreadyMadeUp.has(s.id),
+      }
+    })
+    .filter(Boolean) as MakeupStudent[]
 
   const checkedIn = (todaySessions ?? []).filter((s: Session) => s.status === 'present').length
   const absent    = (todaySessions ?? []).filter((s: Session) => s.status === 'absent').length
@@ -143,6 +189,8 @@ export default async function DiemDanhPage() {
           </div>
         )
       })}
+
+      <MakeupCheckin students={makeupCandidates} sessionDate={todayStr} />
     </div>
   )
 }

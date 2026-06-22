@@ -9,13 +9,7 @@ import { AlertCircle } from 'lucide-react'
 import type { Class, Parent } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
 
-function calcAge(dateStr: string): number {
-  const birth = new Date(dateStr)
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
-  return age
-}
+const CURRENT_YEAR = new Date().getFullYear()
 
 interface Props {
   classes: Class[]
@@ -49,8 +43,8 @@ function SubmitButton() {
 
 export default function StudentForm({ classes, parents, action }: Props) {
   const [error, formAction] = useFormState(action, null)
-  const [birthDate, setBirthDate] = useState('')
-  const autoAge = birthDate ? calcAge(birthDate) : null
+  const [birthYear, setBirthYear] = useState('')
+  const autoAge = birthYear ? CURRENT_YEAR - Number(birthYear) : null
 
   return (
     <form action={formAction} className="space-y-4">
@@ -81,22 +75,25 @@ export default function StudentForm({ classes, parents, action }: Props) {
             </div>
           </div>
 
-          {/* Ngày sinh + Tuổi */}
+          {/* Năm sinh + Tuổi */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày sinh</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Năm sinh</label>
               <Input
-                name="birth_date"
-                type="date"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
+                name="birth_year"
+                type="number"
+                min={CURRENT_YEAR - 20}
+                max={CURRENT_YEAR - 1}
+                placeholder="2018"
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
               />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Tuổi
                 {autoAge !== null && (
-                  <span className="ml-1.5 text-xs font-normal text-[#C9A84C]">(tính từ ngày sinh)</span>
+                  <span className="ml-1.5 text-xs font-normal text-[#C9A84C]">(tự tính)</span>
                 )}
               </label>
               <Input
