@@ -46,6 +46,7 @@ export default function AlertRow({
   resolved,
 }: Props) {
   const [sent, setSent] = useState(!!zaloSentAt)
+  const [confirming, setConfirming] = useState(false)
   const [done, setDone] = useState(resolved)
 
   const content = buildZaloContent({
@@ -59,10 +60,19 @@ export default function AlertRow({
     alertType: type as 'package_ended' | 'near_end' | 'inactive',
   })
 
-  async function handleZalo() {
-    await openZalo(parentPhone, content)
+  function handleZalo() {
+    openZalo(parentPhone, content)
+    setConfirming(true)   // chờ admin xác nhận đã gửi
+  }
+
+  async function handleConfirmSent() {
     await fetch(`/api/alerts/${alertId}/zalo-sent`, { method: 'PATCH' })
     setSent(true)
+    setConfirming(false)
+  }
+
+  function handleCancelConfirm() {
+    setConfirming(false)
   }
 
   async function handleResolve() {
@@ -85,12 +95,35 @@ export default function AlertRow({
       </div>
 
       <div className="flex shrink-0 flex-col gap-2">
-        <button
-          onClick={handleZalo}
-          className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs text-white hover:bg-blue-600"
-        >
-          📱 Zalo
-        </button>
+        {confirming ? (
+          /* Bước xác nhận: admin vừa mở Zalo, hỏi đã gửi chưa */
+          <div className="flex flex-col gap-1.5">
+            <p className="text-center text-[11px] text-gray-400">Đã gửi chưa?</p>
+            <button
+              onClick={handleConfirmSent}
+              className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600"
+            >
+              ✓ Đã gửi
+            </button>
+            <button
+              onClick={handleCancelConfirm}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50"
+            >
+              Hủy
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleZalo}
+            className={`rounded-lg px-3 py-1.5 text-xs text-white ${
+              sent
+                ? 'bg-blue-300 hover:bg-blue-400'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            {sent ? '📱 Gửi lại' : '📱 Zalo'}
+          </button>
+        )}
         <button
           onClick={handleResolve}
           className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
