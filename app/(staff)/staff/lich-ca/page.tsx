@@ -45,7 +45,7 @@ export default async function LichCaPage({ searchParams }: Props) {
   const { data: students } = visibleIds.length
     ? await supabase
         .from('students')
-        .select('id, full_name, nickname, class_id')
+        .select('id, full_name, nickname, class_id, attend_days')
         .in('class_id', visibleIds)
         .eq('status', 'active')
         .order('full_name')
@@ -62,8 +62,10 @@ export default async function LichCaPage({ searchParams }: Props) {
     : { data: [] }
 
   // Maps for quick lookup
-  type StudentRow = { id: string; full_name: string; nickname: string | null; class_id: string | null }
-  const studentsByClass = (students ?? []).reduce<Record<string, StudentRow[]>>((acc, s) => {
+  type StudentRow = { id: string; full_name: string; nickname: string | null; class_id: string | null; attend_days: number[] | null }
+  const studentsByClass = (students ?? []).filter((s) =>
+    !s.attend_days || s.attend_days.length === 0 || s.attend_days.includes(selectedDow)
+  ).reduce<Record<string, StudentRow[]>>((acc, s) => {
     if (s && s.class_id) {
       if (!acc[s.class_id]) acc[s.class_id] = []
       acc[s.class_id]!.push(s as StudentRow)

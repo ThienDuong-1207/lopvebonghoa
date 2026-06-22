@@ -22,6 +22,7 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
   const today = new Date().toISOString().split('T')[0]
   const selectedDate    = searchParams.date     || today
   const selectedClassId = searchParams.class_id || ''
+  const selectedDow     = new Date(selectedDate + 'T12:00:00').getDay()
 
   const { data: classes } = await supabase
     .from('classes')
@@ -62,7 +63,10 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
       packages = eligiblePkgs ?? []
 
       const eligibleIds = new Set(packages.map((p: Package) => p.student_id))
-      students = allStudents.filter((s: Student) => eligibleIds.has(s.id))
+      students = allStudents.filter((s: Student) =>
+        eligibleIds.has(s.id) &&
+        (!s.attend_days || s.attend_days.length === 0 || s.attend_days.includes(selectedDow))
+      )
     }
   }
 

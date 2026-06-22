@@ -41,6 +41,8 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
   }
 
   const enrolledAt = (formData.get('enrolled_at') as string) || new Date().toISOString().split('T')[0]
+  const attendDaysRaw = formData.getAll('attend_days').map(Number)
+  const attendDays = attendDaysRaw.length > 0 ? attendDaysRaw : null
 
   const { error: studentErr } = await supabase.from('students').insert({
     full_name:   fullName,
@@ -52,6 +54,7 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
     notes:       (formData.get('notes') as string)?.trim() || null,
     status:      'active',
     enrolled_at: enrolledAt,
+    attend_days: attendDays,
   })
 
   if (studentErr) return `Không thể tạo học sinh: ${studentErr.message}`

@@ -55,6 +55,7 @@ export interface Student {
   status: StudentStatus
   enrolled_at: string
   last_seen_at: string | null
+  attend_days: number[] | null
 }
 
 export interface Package {

@@ -65,7 +65,9 @@ export default async function DiemDanhPage({ searchParams }: Props) {
         .eq('session_date', selectedDateStr),
     ])
 
-    students = studentsRes.data ?? []
+    students = (studentsRes.data ?? []).filter((s) =>
+      !s.attend_days || s.attend_days.length === 0 || s.attend_days.includes(selectedDow)
+    )
     sessions = sessionsRes.data ?? []
 
     if (students.length > 0) {

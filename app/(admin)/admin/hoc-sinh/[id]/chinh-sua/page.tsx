@@ -8,11 +8,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Class } from '@/lib/types/database'
-import { formatDays } from '@/lib/types/database'
+import ClassAndDaysPicker from '@/components/admin/ClassAndDaysPicker'
 
 async function updateStudent(id: string, formData: FormData) {
   'use server'
   const supabase = createClient()
+
+  const attendDaysRaw = formData.getAll('attend_days').map(Number)
+  const attendDays = attendDaysRaw.length > 0 ? attendDaysRaw : null
 
   await Promise.all([
     supabase.from('students').update({
@@ -22,6 +25,7 @@ async function updateStudent(id: string, formData: FormData) {
       class_id:    (formData.get('class_id') as string) || null,
       notes:       (formData.get('notes') as string).trim() || null,
       enrolled_at: (formData.get('enrolled_at') as string) || undefined,
+      attend_days: attendDays,
     }).eq('id', id),
 
     supabase.from('parents').update({
@@ -77,18 +81,11 @@ export default async function ChinhSuaHocSinhPage({ params }: { params: { id: st
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
-                  <select
-                    name="class_id"
-                    defaultValue={student.class_id ?? ''}
-                    className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  >
-                    <option value="">Chưa xếp lớp</option>
-                    {(classes ?? []).map((c: Pick<Class, 'id' | 'name' | 'days_of_week' | 'time_start' | 'time_end'>) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
-                      </option>
-                    ))}
-                  </select>
+                  <ClassAndDaysPicker
+                    classes={classes ?? []}
+                    defaultClassId={student.class_id}
+                    defaultAttendDays={student.attend_days}
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">

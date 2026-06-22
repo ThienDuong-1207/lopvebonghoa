@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle } from 'lucide-react'
 import type { Class, Parent } from '@/lib/types/database'
-import { formatDays } from '@/lib/types/database'
+import ClassAndDaysPicker from '@/components/admin/ClassAndDaysPicker'
 
 const CURRENT_YEAR = new Date().getFullYear()
 const TODAY = new Date().toISOString().split('T')[0]
@@ -109,20 +109,10 @@ export default function StudentForm({ classes, parents, action }: Props) {
             </div>
           </div>
 
-          {/* Lớp học */}
+          {/* Lớp học + ngày học */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
-            <select
-              name="class_id"
-              className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            >
-              <option value="">Chưa xếp lớp</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
-                </option>
-              ))}
-            </select>
+            <ClassAndDaysPicker classes={classes} />
           </div>
 
           {/* Ngày bắt đầu học */}
