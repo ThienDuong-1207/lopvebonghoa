@@ -45,9 +45,15 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   const activePackage = (packages ?? []).find((p: Package) => p.status === 'active')
 
+  // Capitalize tên hiển thị (data có thể được nhập thường)
+  const displayName = student.full_name
+    .split(' ')
+    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+
   return (
     <>
-      <Topbar title={student.full_name} backHref="/admin/hoc-sinh" backLabel="Học sinh" />
+      <Topbar title={displayName} backHref="/admin/hoc-sinh" backLabel="Học sinh" />
       <div className="p-6">
         <div className="grid gap-6 xl:grid-cols-3">
           {/* Thông tin cá nhân */}
@@ -62,25 +68,26 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
               </Link>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Tên</span>
-                <span className="font-medium dark:text-gray-100">{student.full_name}</span>
+              {/* pattern chung: label shrink-0, value min-w-0 text-right */}
+              <div className="flex items-start justify-between gap-3">
+                <span className="shrink-0 text-gray-500">Tên</span>
+                <span className="min-w-0 break-words text-right font-medium dark:text-gray-100">{displayName}</span>
               </div>
               {student.nickname && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Biệt danh</span>
-                  <span className="dark:text-gray-200">"{student.nickname}"</span>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="shrink-0 text-gray-500">Biệt danh</span>
+                  <span className="min-w-0 break-words text-right dark:text-gray-200">"{student.nickname}"</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Tuổi</span>
-                <span className="dark:text-gray-200">{student.age ?? '—'}</span>
+              <div className="flex items-start justify-between gap-3">
+                <span className="shrink-0 text-gray-500">Tuổi</span>
+                <span className="min-w-0 text-right dark:text-gray-200">{student.age ?? '—'}</span>
               </div>
 
               {/* Lớp học */}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Lớp học</span>
-                <div className="text-right">
+              <div className="flex items-start justify-between gap-3">
+                <span className="shrink-0 text-gray-500">Lớp học</span>
+                <div className="min-w-0 text-right">
                   <div className="dark:text-gray-200">{student.classes?.name ?? '—'}</div>
                   {student.classes && (
                     <div className="text-xs text-gray-400">
@@ -90,9 +97,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                 </div>
               </div>
 
-              {/* Status + change */}
-              <div className="flex items-center justify-between border-t pt-3 dark:border-gray-700">
-                <span className="text-gray-500">Trạng thái</span>
+              {/* Trạng thái */}
+              <div className="flex items-center justify-between gap-3 border-t pt-3 dark:border-gray-700">
+                <span className="shrink-0 text-gray-500">Trạng thái</span>
                 <Badge variant={student.status === 'active' ? 'default' : student.status === 'paused' ? 'secondary' : 'outline'}>
                   {STATUS_LABEL[student.status]}
                 </Badge>
@@ -107,30 +114,30 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                 ))}
               </div>
 
-              {/* Parent info */}
+              {/* Phụ huynh */}
               <div className="border-t pt-3 dark:border-gray-700">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Phụ huynh</p>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Tên</span>
-                    <span className="dark:text-gray-200">{student.parents?.full_name}</span>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="shrink-0 text-gray-500">Tên</span>
+                    <span className="min-w-0 break-words text-right dark:text-gray-200">{student.parents?.full_name}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Số điện thoại</span>
-                    <a href={`tel:${student.parents?.phone}`} className="text-[#C9A84C] hover:underline">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="shrink-0 text-gray-500">Số điện thoại</span>
+                    <a href={`tel:${student.parents?.phone}`} className="min-w-0 text-right text-[#C9A84C] hover:underline">
                       {student.parents?.phone}
                     </a>
                   </div>
                   {student.parents?.phone_2 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">SĐT phụ</span>
-                      <span className="dark:text-gray-200">{student.parents.phone_2}</span>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="shrink-0 text-gray-500">SĐT phụ</span>
+                      <span className="min-w-0 text-right dark:text-gray-200">{student.parents.phone_2}</span>
                     </div>
                   )}
                   {student.parents?.address && (
-                    <div className="space-y-0.5">
-                      <span className="text-gray-500">Địa chỉ</span>
-                      <p className="text-sm dark:text-gray-200">{student.parents.address}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="shrink-0 text-gray-500">Địa chỉ</span>
+                      <span className="min-w-0 break-words text-right dark:text-gray-200">{student.parents.address}</span>
                     </div>
                   )}
                 </div>
@@ -139,7 +146,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
               {student.notes && (
                 <div className="border-t pt-3 dark:border-gray-700">
                   <p className="text-gray-500">Ghi chú</p>
-                  <p className="mt-1 text-gray-700 dark:text-gray-300">{student.notes}</p>
+                  <p className="mt-1 break-words text-gray-700 dark:text-gray-300">{student.notes}</p>
                 </div>
               )}
             </CardContent>
