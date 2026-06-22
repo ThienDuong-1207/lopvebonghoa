@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { DAY_SHORT } from '@/lib/types/database'
 
 interface ClassOption {
@@ -26,10 +27,10 @@ function formatDays(days: number[]) {
 
 export default function DateClassPicker({ classes, selectedDate, selectedClassId, maxDate }: Props) {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const [date, setDate] = useState(selectedDate)
   const [classId, setClassId] = useState(selectedClassId)
 
-  // Sync khi searchParams thay đổi (navigate back/forward)
   useEffect(() => { setDate(selectedDate) }, [selectedDate])
   useEffect(() => { setClassId(selectedClassId) }, [selectedClassId])
 
@@ -37,8 +38,12 @@ export default function DateClassPicker({ classes, selectedDate, selectedClassId
     const params = new URLSearchParams()
     if (d) params.set('date', d)
     if (c) params.set('class_id', c)
-    router.push(`/admin/diem-danh?${params.toString()}`)
+    startTransition(() => {
+      router.push(`/admin/diem-danh?${params.toString()}`)
+    })
   }
+
+  const inputCls = 'rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 disabled:opacity-60'
 
   return (
     <div className="mb-6 flex flex-wrap items-end gap-3">
@@ -48,24 +53,27 @@ export default function DateClassPicker({ classes, selectedDate, selectedClassId
           type="date"
           value={date}
           max={maxDate}
+          disabled={isPending}
           onChange={(e) => {
             setDate(e.target.value)
             navigate(e.target.value, classId)
           }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className={inputCls}
         />
       </div>
+
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
           Lớp học <span className="font-normal text-gray-400">(buổi diễn ra)</span>
         </label>
         <select
           value={classId}
+          disabled={isPending}
           onChange={(e) => {
             setClassId(e.target.value)
             navigate(date, e.target.value)
           }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className={inputCls}
         >
           <option value="">— Chọn lớp —</option>
           {classes.map((c) => (
@@ -75,6 +83,17 @@ export default function DateClassPicker({ classes, selectedDate, selectedClassId
           ))}
         </select>
       </div>
+
+      <button
+        disabled={isPending}
+        onClick={() => navigate(date, classId)}
+        className="flex items-center gap-2 rounded-xl bg-[#0D2545] px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#0D2545]/90 disabled:opacity-60"
+      >
+        {isPending
+          ? <Loader2 className="h-4 w-4 animate-spin" />
+          : null}
+        {isPending ? 'Đang tải...' : 'Xem'}
+      </button>
     </div>
   )
 }
