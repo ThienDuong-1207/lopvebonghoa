@@ -116,7 +116,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                     <span className="dark:text-gray-200">{student.parents?.full_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">SĐT Zalo</span>
+                    <span className="text-gray-500">Số điện thoại</span>
                     <a href={`tel:${student.parents?.phone}`} className="text-[#C9A84C] hover:underline">
                       {student.parents?.phone}
                     </a>

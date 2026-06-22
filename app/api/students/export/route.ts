@@ -29,7 +29,7 @@ export async function GET() {
     'Trạng thái':      s.status,
     'Ghi chú':         s.notes ?? '',
     'Tên phụ huynh':   s.parents?.full_name ?? '',
-    'SĐT Zalo':        s.parents?.phone ?? '',
+    'Số điện thoại':   s.parents?.phone ?? '',
     'SĐT phụ':         s.parents?.phone_2 ?? '',
     'Địa chỉ':         s.parents?.address ?? '',
   }))

@@ -4,17 +4,19 @@ import * as XLSX from 'xlsx'
 
 interface ExcelRow {
   'Họ tên học sinh *'?: string
-  'Họ tên học sinh'?:  string
-  'Biệt danh'?:        string
-  'Tuổi'?:             number | string
-  'Lớp học'?:          string
-  'Ghi chú'?:          string
-  'Tên phụ huynh *'?:  string
-  'Tên phụ huynh'?:    string
-  'SĐT Zalo *'?:       string
-  'SĐT Zalo'?:         string
-  'SĐT phụ'?:          string
-  'Địa chỉ'?:          string
+  'Họ tên học sinh'?:   string
+  'Biệt danh'?:         string
+  'Tuổi'?:              number | string
+  'Lớp học'?:           string
+  'Ghi chú'?:           string
+  'Tên phụ huynh *'?:   string
+  'Tên phụ huynh'?:     string
+  'Số điện thoại *'?:   string   // tên mới
+  'Số điện thoại'?:     string   // tên mới không bắt buộc
+  'SĐT Zalo *'?:        string   // tên cũ — giữ để tương thích
+  'SĐT Zalo'?:          string   // tên cũ — giữ để tương thích
+  'SĐT phụ'?:           string
+  'Địa chỉ'?:           string
   [key: string]: unknown
 }
 
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
 
     const studentName = str(row['Họ tên học sinh *'] || row['Họ tên học sinh'])
     const parentName  = str(row['Tên phụ huynh *']  || row['Tên phụ huynh'])
-    const parentPhone = str(row['SĐT Zalo *']        || row['SĐT Zalo'])
+    const parentPhone = str(row['Số điện thoại *'] || row['Số điện thoại'] || row['SĐT Zalo *'] || row['SĐT Zalo'])
     const nickname    = str(row['Biệt danh'])
     const ageRaw      = str(row['Tuổi'])
     const className   = str(row['Lớp học'])
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
     if (!studentName && !parentPhone) continue
 
     if (!studentName) { errors.push(`Dòng ${rowNum}: Thiếu họ tên học sinh`); continue }
-    if (!parentPhone) { errors.push(`Dòng ${rowNum}: Thiếu SĐT Zalo (${studentName})`); continue }
+    if (!parentPhone) { errors.push(`Dòng ${rowNum}: Thiếu số điện thoại (${studentName})`); continue }
 
     const age = ageRaw ? Number(ageRaw) : null
     const classId = className ? (classMap.get(className.toLowerCase().trim()) ?? null) : null

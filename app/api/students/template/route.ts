@@ -20,7 +20,7 @@ export async function GET() {
       'Lớp học':           (classes ?? [])[0]?.name ?? 'Tối 2-4-6 A',
       'Ghi chú':           'Thích vẽ động vật',
       'Tên phụ huynh *':   'Nguyễn Thị B',
-      'SĐT Zalo *':        '0901234567',
+      'Số điện thoại *':   '0901234567',
       'SĐT phụ':           '0912345678',
       'Địa chỉ':           '123 Đường ABC, Phường X, Quận Y, TP.HCM',
     },

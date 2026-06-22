@@ -33,7 +33,7 @@ export default function RegisterForm() {
 
   if (success) {
     return (
-      <div className="rounded-2xl bg-white p-10 text-center shadow-sm">
+      <div className="rounded-2xl bg-white p-10 text-center shadow-2xl shadow-black/20">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
           <CheckCircle2 className="h-7 w-7 text-green-500" />
         </div>
@@ -46,7 +46,7 @@ export default function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-8 shadow-sm">
+    <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-8 shadow-2xl shadow-black/20">
       <h3 className="mb-6 text-xl font-bold text-[#0D2545]">Đăng ký tư vấn miễn phí</h3>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -64,7 +64,7 @@ export default function RegisterForm() {
           <Input name="parent_name" required placeholder="Nguyễn Thị B" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">SĐT Zalo *</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Số điện thoại *</label>
           <Input name="phone" required type="tel" placeholder="0901 234 567" />
         </div>
         <div>

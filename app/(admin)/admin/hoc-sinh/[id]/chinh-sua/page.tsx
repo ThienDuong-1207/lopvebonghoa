@@ -107,7 +107,7 @@ export default async function ChinhSuaHocSinhPage({ params }: { params: { id: st
                     <Input name="parent_name" required defaultValue={student.parents?.full_name ?? ''} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SĐT Zalo *</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Số điện thoại *</label>
                     <Input name="parent_phone" type="tel" required defaultValue={student.parents?.phone ?? ''} />
                   </div>
                 </div>

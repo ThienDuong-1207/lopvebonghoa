@@ -190,12 +190,16 @@ export default async function HomePage() {
       </section>
 
       {/* Form đăng ký */}
-      <section id="dang-ky" className="py-24">
-        <div className="mx-auto max-w-lg px-4">
+      <section id="dang-ky" className="relative overflow-hidden bg-[#0D2545] py-24">
+        {/* Decorative circles — echo hero */}
+        <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full bg-[#C9A84C]/10" />
+
+        <div className="relative mx-auto max-w-lg px-4">
           <div className="mb-4 text-center text-sm font-semibold uppercase tracking-widest text-[#C9A84C]">
             Đăng ký
           </div>
-          <h2 className="mb-10 text-center text-3xl font-bold text-[#0D2545]">
+          <h2 className="mb-10 text-center text-3xl font-bold text-white">
             Bắt đầu hành trình sáng tạo
           </h2>
           <RegisterForm />
