@@ -16,6 +16,7 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
   const parentName = (formData.get('parent_name') as string)?.trim()
   const parentPhone = (formData.get('parent_phone') as string)?.trim()
   const parentPhone2 = (formData.get('parent_phone_2') as string)?.trim() || null
+  const parentAddress = (formData.get('parent_address') as string)?.trim() || null
 
   let parentId: string | null = existingParentId
 
@@ -25,7 +26,7 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
     }
     const { data: newParent, error: parentErr } = await supabase
       .from('parents')
-      .insert({ full_name: parentName, phone: parentPhone, phone_2: parentPhone2 })
+      .insert({ full_name: parentName, phone: parentPhone, phone_2: parentPhone2, address: parentAddress })
       .select('id')
       .single()
     if (parentErr || !newParent) return `Không thể tạo phụ huynh: ${parentErr?.message ?? 'Lỗi không xác định'}`

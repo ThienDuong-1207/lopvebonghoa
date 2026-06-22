@@ -22,6 +22,7 @@ export interface Parent {
   full_name: string
   phone: string
   phone_2: string | null
+  address: string | null
   created_at: string
 }
 

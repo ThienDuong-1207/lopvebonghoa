@@ -11,6 +11,7 @@ interface ExcelRow {
   'Tên phụ huynh *'?: string
   'SĐT Zalo *'?: string
   'SĐT phụ'?: string
+  'Địa chỉ'?: string
   // Also accept without asterisk (export format)
   'Họ tên học sinh'?: string
   'Tên phụ huynh'?: string
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     const slotName = str(row['Ca học'])
     const notes = str(row['Ghi chú'])
     const phone2 = str(row['SĐT phụ'])
+    const address = str(row['Địa chỉ'])
 
     // Skip completely empty rows
     if (!studentName && !parentPhone) continue
@@ -82,13 +84,13 @@ export async function POST(request: Request) {
       parentId = existingParent.id
       // Update parent name if provided and different
       if (parentName) {
-        await supabase.from('parents').update({ full_name: parentName, phone_2: phone2 || null }).eq('id', parentId)
+        await supabase.from('parents').update({ full_name: parentName, phone_2: phone2 || null, address: address || null }).eq('id', parentId)
       }
     } else {
       if (!parentName) { errors.push(`Dòng ${rowNum}: Thiếu tên phụ huynh cho SĐT mới ${parentPhone}`); continue }
       const { data: newParent, error: pErr } = await supabase
         .from('parents')
-        .insert({ full_name: parentName, phone: parentPhone, phone_2: phone2 || null })
+        .insert({ full_name: parentName, phone: parentPhone, phone_2: phone2 || null, address: address || null })
         .select('id')
         .single()
       if (pErr || !newParent) { errors.push(`Dòng ${rowNum}: Lỗi tạo phụ huynh — ${pErr?.message}`); continue }

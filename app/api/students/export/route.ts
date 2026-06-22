@@ -7,7 +7,7 @@ export async function GET() {
 
   const { data: students, error } = await supabase
     .from('students')
-    .select('*, parents(full_name, phone, phone_2), slots(name)')
+    .select('*, parents(full_name, phone, phone_2, address), slots(name)')
     .order('full_name')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -22,6 +22,7 @@ export async function GET() {
     'Tên phụ huynh': s.parents?.full_name ?? '',
     'SĐT Zalo': s.parents?.phone ?? '',
     'SĐT phụ': s.parents?.phone_2 ?? '',
+    'Địa chỉ': s.parents?.address ?? '',
   }))
 
   const wb = XLSX.utils.book_new()
@@ -30,7 +31,7 @@ export async function GET() {
   const ws = XLSX.utils.json_to_sheet(rows)
   ws['!cols'] = [
     { wch: 25 }, { wch: 12 }, { wch: 6 }, { wch: 18 },
-    { wch: 12 }, { wch: 25 }, { wch: 22 }, { wch: 14 }, { wch: 14 },
+    { wch: 12 }, { wch: 25 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 40 },
   ]
   XLSX.utils.book_append_sheet(wb, ws, 'Danh sách học sinh')
 

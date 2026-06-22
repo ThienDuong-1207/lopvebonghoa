@@ -111,6 +111,10 @@ export default function StudentForm({ slots, parents, action }: Props) {
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SĐT phụ</label>
             <Input name="parent_phone_2" placeholder="0901234567" />
           </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Địa chỉ</label>
+            <Input name="parent_address" placeholder="123 Đường ABC, Phường X, Quận Y, TP.HCM" />
+          </div>
         </div>
       </div>
 

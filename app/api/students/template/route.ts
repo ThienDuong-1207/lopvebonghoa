@@ -18,17 +18,18 @@ export async function GET() {
     'Tên phụ huynh *',
     'SĐT Zalo *',
     'SĐT phụ',
+    'Địa chỉ',
   ]
   const examples = [
-    ['Nguyễn Văn An', 'An', 6, 'Thứ 2 sáng', '', 'Nguyễn Thị Bình', '0901234567', ''],
-    ['Trần Thị Bảo', 'Bảo', 5, 'Thứ 4 chiều', 'Thích vẽ màu nước', 'Trần Văn Cường', '0912345678', '0987654321'],
-    ['', '', '', '', '', '', '', ''],
+    ['Nguyễn Văn An', 'An', 6, 'Thứ 2 sáng', '', 'Nguyễn Thị Bình', '0901234567', '', '123 Nguyễn Trãi, Q.1, TP.HCM'],
+    ['Trần Thị Bảo', 'Bảo', 5, 'Thứ 4 chiều', 'Thích vẽ màu nước', 'Trần Văn Cường', '0912345678', '0987654321', ''],
+    ['', '', '', '', '', '', '', '', ''],
   ]
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...examples])
   ws['!cols'] = [
     { wch: 25 }, { wch: 12 }, { wch: 6 }, { wch: 18 },
-    { wch: 25 }, { wch: 22 }, { wch: 14 }, { wch: 14 },
+    { wch: 25 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 40 },
   ]
   XLSX.utils.book_append_sheet(wb, ws, 'Template')
 
