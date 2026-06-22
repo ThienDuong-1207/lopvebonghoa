@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
+import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import type { Class, Student } from '@/lib/types/database'
 import { DAY_SHORT, DAY_FULL, formatDays } from '@/lib/types/database'
@@ -107,16 +108,19 @@ export default async function LichCaPage() {
                     ))}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="flex flex-col items-end gap-1.5">
                   <div className="text-lg font-bold text-[#0D2545]">
                     {countByClass[cls.id] ?? 0}
                     <span className="text-sm font-normal text-gray-400">/{cls.max_capacity}</span>
                   </div>
                   <div className="text-xs text-gray-400">học sinh</div>
                   {hasToday && (
-                    <div className="mt-1 rounded-full bg-[#C9A84C]/15 px-2 py-0.5 text-[10px] font-medium text-[#C9A84C]">
-                      Hôm nay
-                    </div>
+                    <Link
+                      href="/staff/diem-danh"
+                      className="rounded-full bg-[#C9A84C] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#C9A84C]/90"
+                    >
+                      Điểm danh →
+                    </Link>
                   )}
                 </div>
               </div>

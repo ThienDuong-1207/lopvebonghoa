@@ -13,6 +13,7 @@ import {
   UserCog,
   LogOut,
   Palette,
+  CheckSquare,
 } from 'lucide-react'
 
 const MENU_ITEMS = [
@@ -20,6 +21,7 @@ const MENU_ITEMS = [
   { href: '/admin/hoc-sinh', label: 'Học sinh', icon: Users },
   { href: '/admin/dang-ky-moi', label: 'Đăng ký mới', icon: ClipboardList },
   { href: '/admin/thanh-toan', label: 'Thanh toán', icon: CreditCard },
+  { href: '/admin/diem-danh', label: 'Điểm danh', icon: CheckSquare },
   { href: '/admin/canh-bao', label: 'Cảnh báo', icon: Bell },
   { href: '/admin/lich-hoc', label: 'Lịch & Ca học', icon: CalendarDays },
 ]
