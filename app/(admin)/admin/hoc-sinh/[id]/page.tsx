@@ -97,6 +97,11 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                 {student.nickname && (
                   <InfoRow label="Biệt danh">"{student.nickname}"</InfoRow>
                 )}
+                {student.birth_date && (
+                  <InfoRow label="Ngày sinh">
+                    {new Date(student.birth_date).toLocaleDateString('vi-VN')}
+                  </InfoRow>
+                )}
                 <InfoRow label="Tuổi">{student.age ? `${student.age} tuổi` : '—'}</InfoRow>
                 <InfoRow label="Lớp học">
                   <span className="font-medium">{student.classes?.name ?? '—'}</span>

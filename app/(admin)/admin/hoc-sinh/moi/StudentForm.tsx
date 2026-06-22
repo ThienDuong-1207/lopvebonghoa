@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,6 +8,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle } from 'lucide-react'
 import type { Class, Parent } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
+
+function calcAge(dateStr: string): number {
+  const birth = new Date(dateStr)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
+  return age
+}
 
 interface Props {
   classes: Class[]
@@ -40,6 +49,8 @@ function SubmitButton() {
 
 export default function StudentForm({ classes, parents, action }: Props) {
   const [error, formAction] = useFormState(action, null)
+  const [birthDate, setBirthDate] = useState('')
+  const autoAge = birthDate ? calcAge(birthDate) : null
 
   return (
     <form action={formAction} className="space-y-4">
@@ -70,26 +81,50 @@ export default function StudentForm({ classes, parents, action }: Props) {
             </div>
           </div>
 
-          {/* Tuổi (nhỏ) + Lớp học (rộng) */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Ngày sinh + Tuổi */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tuổi</label>
-              <Input name="age" type="number" min={4} max={12} placeholder="6" className="text-center" />
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày sinh</label>
+              <Input
+                name="birth_date"
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+              />
             </div>
-            <div className="col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
-              <select
-                name="class_id"
-                className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-              >
-                <option value="">Chưa xếp lớp</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
-                  </option>
-                ))}
-              </select>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Tuổi
+                {autoAge !== null && (
+                  <span className="ml-1.5 text-xs font-normal text-[#C9A84C]">(tính từ ngày sinh)</span>
+                )}
+              </label>
+              <Input
+                name="age"
+                type="number"
+                min={1}
+                placeholder="6"
+                value={autoAge !== null ? autoAge : undefined}
+                readOnly={autoAge !== null}
+                className={autoAge !== null ? 'bg-gray-50 text-gray-500 dark:bg-gray-700/50' : ''}
+              />
             </div>
+          </div>
+
+          {/* Lớp học */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Lớp học</label>
+            <select
+              name="class_id"
+              className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+            >
+              <option value="">Chưa xếp lớp</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {formatDays(c.days_of_week)} · {c.time_start.slice(0, 5)}–{c.time_end.slice(0, 5)}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

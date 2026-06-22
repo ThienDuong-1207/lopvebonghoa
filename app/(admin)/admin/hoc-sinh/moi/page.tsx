@@ -33,14 +33,24 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
     parentId = newParent.id
   }
 
+  const birthDate = (formData.get('birth_date') as string) || null
+  let age: number | null = formData.get('age') ? Number(formData.get('age')) : null
+  if (birthDate && !age) {
+    const birth = new Date(birthDate)
+    const today = new Date()
+    age = today.getFullYear() - birth.getFullYear()
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
+  }
+
   const { error: studentErr } = await supabase.from('students').insert({
-    full_name: fullName,
-    nickname:  (formData.get('nickname') as string)?.trim() || null,
-    age:       formData.get('age') ? Number(formData.get('age')) : null,
-    parent_id: parentId,
-    class_id:  (formData.get('class_id') as string) || null,
-    notes:     (formData.get('notes') as string)?.trim() || null,
-    status:    'active',
+    full_name:  fullName,
+    nickname:   (formData.get('nickname') as string)?.trim() || null,
+    birth_date: birthDate,
+    age,
+    parent_id:  parentId,
+    class_id:   (formData.get('class_id') as string) || null,
+    notes:      (formData.get('notes') as string)?.trim() || null,
+    status:     'active',
   })
 
   if (studentErr) return `Không thể tạo học sinh: ${studentErr.message}`

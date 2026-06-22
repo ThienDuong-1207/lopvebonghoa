@@ -47,6 +47,7 @@ export interface Student {
   id: string
   full_name: string
   nickname: string | null
+  birth_date: string | null
   age: number | null
   parent_id: string
   class_id: string | null
