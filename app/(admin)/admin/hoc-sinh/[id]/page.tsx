@@ -220,7 +220,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                   <Wallet className="h-10 w-10 text-gray-200 dark:text-gray-700" />
                   <p className="text-sm text-gray-400">Chưa có gói học</p>
                   <Link
-                    href="/admin/thanh-toan"
+                    href={`/admin/thanh-toan?student_id=${params.id}`}
                     className="rounded-lg bg-[#0D2545] px-4 py-2 text-xs font-medium text-white hover:bg-[#0D2545]/90"
                   >
                     + Kích hoạt gói học

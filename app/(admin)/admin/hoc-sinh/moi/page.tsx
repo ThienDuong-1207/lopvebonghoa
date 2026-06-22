@@ -21,8 +21,8 @@ async function createStudent(_prev: string | null, formData: FormData): Promise<
   let parentId: string | null = existingParentId
 
   if (!parentId) {
-    if (!parentName || !parentPhone) {
-      return 'Vui lòng chọn phụ huynh có sẵn hoặc nhập tên và SĐT phụ huynh mới.'
+    if (!parentName) {
+      return 'Vui lòng chọn phụ huynh có sẵn hoặc nhập tên phụ huynh mới.'
     }
     const { data: newParent, error: parentErr } = await supabase
       .from('parents')

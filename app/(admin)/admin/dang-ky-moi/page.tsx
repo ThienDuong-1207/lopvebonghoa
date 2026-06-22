@@ -35,6 +35,68 @@ async function updateStatus(id: string, status: string) {
   redirect('/admin/dang-ky-moi')
 }
 
+async function convertToStudent(registrationId: string) {
+  'use server'
+  const supabase = createClient()
+
+  const { data: reg } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('id', registrationId)
+    .single()
+
+  if (!reg) redirect('/admin/dang-ky-moi')
+
+  // Nếu đã convert, redirect thẳng sang trang học sinh
+  if (reg.converted_student_id) {
+    redirect(`/admin/hoc-sinh/${reg.converted_student_id}`)
+  }
+
+  // Tìm phụ huynh theo SĐT hoặc tạo mới
+  let parentId: string
+  const { data: existingParent } = await supabase
+    .from('parents')
+    .select('id')
+    .eq('phone', reg.phone)
+    .maybeSingle()
+
+  if (existingParent) {
+    parentId = existingParent.id
+  } else {
+    const { data: newParent, error: parentErr } = await supabase
+      .from('parents')
+      .insert({ full_name: reg.parent_name, phone: reg.phone })
+      .select('id')
+      .single()
+    if (parentErr || !newParent) redirect('/admin/dang-ky-moi?error=parent')
+    parentId = newParent!.id
+  }
+
+  // Tạo học sinh
+  const notes = reg.preferred_slot ? `Ca mong muốn: ${reg.preferred_slot}` : null
+  const { data: student, error: studentErr } = await supabase
+    .from('students')
+    .insert({
+      full_name: reg.child_name,
+      age: reg.child_age ?? null,
+      parent_id: parentId,
+      notes,
+      status: 'active',
+    })
+    .select('id')
+    .single()
+
+  if (studentErr || !student) redirect('/admin/dang-ky-moi?error=student')
+
+  // Cập nhật đăng ký
+  await supabase
+    .from('registrations')
+    .update({ status: 'converted', converted_student_id: student!.id })
+    .eq('id', registrationId)
+
+  redirect(`/admin/hoc-sinh/${student!.id}`)
+}
+
 interface Props { searchParams: { filter?: string } }
 
 export default async function DangKyMoiPage({ searchParams }: Props) {
@@ -135,11 +197,19 @@ export default async function DangKyMoiPage({ searchParams }: Props) {
                       </>
                     )}
                     {r.status === 'contacted' && (
-                      <form action={updateStatus.bind(null, r.id, 'converted')}>
+                      <form action={convertToStudent.bind(null, r.id)}>
                         <button className="w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700">
-                          Đã vào học
+                          Đã vào học →
                         </button>
                       </form>
+                    )}
+                    {r.status === 'converted' && r.converted_student_id && (
+                      <Link
+                        href={`/admin/hoc-sinh/${r.converted_student_id}`}
+                        className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                      >
+                        Xem hồ sơ →
+                      </Link>
                     )}
                   </div>
                 </div>

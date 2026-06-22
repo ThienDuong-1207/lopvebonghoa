@@ -148,7 +148,7 @@ export default function StudentForm({ classes, parents, action }: Props) {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Số điện thoại <span className="text-red-500">*</span>
+                Số điện thoại
               </label>
               <Input name="parent_phone" type="tel" placeholder="0901234567" />
             </div>

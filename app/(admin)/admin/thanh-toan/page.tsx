@@ -44,7 +44,7 @@ async function createPackage(formData: FormData) {
   redirect('/admin/thanh-toan?success=1')
 }
 
-interface Props { searchParams: { error?: string; success?: string; msg?: string } }
+interface Props { searchParams: { error?: string; success?: string; msg?: string; student_id?: string } }
 
 export default async function ThanhToanPage({ searchParams }: Props) {
   const supabase = createClient()
@@ -87,6 +87,7 @@ export default async function ThanhToanPage({ searchParams }: Props) {
                 <select
                   name="student_id"
                   required
+                  defaultValue={searchParams.student_id ?? ''}
                   className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
                 >
                   <option value="">Chọn học sinh...</option>
@@ -98,15 +99,7 @@ export default async function ThanhToanPage({ searchParams }: Props) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Số buổi</label>
-                  <select
-                    name="total_sessions"
-                    defaultValue={8}
-                    className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                  >
-                    {[4, 8, 12, 16, 20].map((n) => (
-                      <option key={n} value={n}>{n} buổi</option>
-                    ))}
-                  </select>
+                  <Input name="total_sessions" type="number" required min={1} defaultValue={8} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày đóng *</label>
