@@ -18,29 +18,33 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
 async function createPackage(formData: FormData) {
   'use server'
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
   const studentId = formData.get('student_id') as string
   if (!studentId) redirect('/admin/thanh-toan?error=missing_student')
+
+  // Lấy profiles.id (khác với auth.users.id) để đúng FK constraint
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: adminProfile } = await supabase
+    .from('profiles').select('id').eq('auth_user_id', user!.id).single()
 
   const { data: existing } = await supabase
     .from('packages').select('id').eq('student_id', studentId).eq('status', 'active').single()
   if (existing) redirect('/admin/thanh-toan?error=duplicate')
 
   const { error } = await supabase.from('packages').insert({
-    student_id: studentId,
-    amount_paid: Number(formData.get('amount_paid')),
-    paid_at: formData.get('paid_at') as string,
-    note: (formData.get('note') as string) || null,
-    total_sessions: Number(formData.get('total_sessions') ?? 8),
-    used_sessions: 0,
-    marked_paid_by: user?.id,
-    status: 'active',
+    student_id:      studentId,
+    amount_paid:     Number(formData.get('amount_paid')),
+    paid_at:         formData.get('paid_at') as string,
+    note:            (formData.get('note') as string) || null,
+    total_sessions:  Number(formData.get('total_sessions') || 8),
+    used_sessions:   0,
+    marked_paid_by:  adminProfile?.id ?? null,
+    status:          'active',
   })
-  if (error) redirect('/admin/thanh-toan?error=db')
+  if (error) redirect(`/admin/thanh-toan?error=db&msg=${encodeURIComponent(error.message)}`)
   redirect('/admin/thanh-toan?success=1')
 }
 
-interface Props { searchParams: { error?: string; success?: string } }
+interface Props { searchParams: { error?: string; success?: string; msg?: string } }
 
 export default async function ThanhToanPage({ searchParams }: Props) {
   const supabase = createClient()
@@ -51,9 +55,9 @@ export default async function ThanhToanPage({ searchParams }: Props) {
   ])
 
   const errorMsg: Record<string, string> = {
-    duplicate: 'Học sinh này đang có gói học active. Hãy đợi hết gói mới thêm tiếp.',
+    duplicate:       'Học sinh này đang có gói học đang hoạt động. Hãy đợi hết gói mới kích hoạt tiếp.',
     missing_student: 'Vui lòng chọn học sinh.',
-    db: 'Lỗi khi lưu, vui lòng thử lại.',
+    db:              `Lỗi khi lưu${searchParams.msg ? `: ${searchParams.msg}` : ', vui lòng thử lại.'}`,
   }
 
   return (
@@ -96,10 +100,11 @@ export default async function ThanhToanPage({ searchParams }: Props) {
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Số buổi</label>
                   <select
                     name="total_sessions"
+                    defaultValue={8}
                     className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
                   >
                     {[4, 8, 12, 16, 20].map((n) => (
-                      <option key={n} value={n} selected={n === 8}>{n} buổi</option>
+                      <option key={n} value={n}>{n} buổi</option>
                     ))}
                   </select>
                 </div>
