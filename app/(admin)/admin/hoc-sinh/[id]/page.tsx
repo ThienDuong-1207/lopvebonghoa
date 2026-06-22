@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Pencil, CalendarDays, Wallet } from 'lucide-react'
 import type { Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, formatDays } from '@/lib/types/database'
+import DeleteStudentButton from './DeleteStudentButton'
 
 const SESSION_LABEL: Record<string, string> = { present: 'Có mặt', absent: 'Vắng', makeup: 'Học bù' }
 const STATUS_LABEL: Record<string, string> = { active: 'Đang học', paused: 'Tạm nghỉ', inactive: 'Nghỉ học' }
@@ -59,8 +60,10 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   if (!student) notFound()
 
-  const activePackage = (packages ?? []).find((p: Package) => p.status === 'active')
-  const oldPackages   = (packages ?? []).filter((p: Package) => p.status !== 'active')
+  const activePackage  = (packages ?? []).find((p: Package) => p.status === 'active')
+  const oldPackages    = (packages ?? []).filter((p: Package) => p.status !== 'active')
+  const packageCount   = (packages ?? []).length
+  const sessionCount   = (packages ?? []).reduce((n, p) => n + ((p as Package & { sessions: Session[] }).sessions?.length ?? 0), 0)
 
   const displayName = student.full_name
     .split(' ')
@@ -82,12 +85,20 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
               <h2 className="font-semibold text-gray-800 dark:text-gray-100">Thông tin học sinh</h2>
-              <Link
-                href={`/admin/hoc-sinh/${params.id}/chinh-sua`}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-[#C9A84C] hover:bg-[#C9A84C]/10"
-              >
-                <Pencil className="h-3.5 w-3.5" /> Chỉnh sửa
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link
+                  href={`/admin/hoc-sinh/${params.id}/chinh-sua`}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-[#C9A84C] hover:bg-[#C9A84C]/10"
+                >
+                  <Pencil className="h-3.5 w-3.5" /> Chỉnh sửa
+                </Link>
+                <DeleteStudentButton
+                  studentId={params.id}
+                  studentName={displayName}
+                  packageCount={packageCount}
+                  sessionCount={sessionCount}
+                />
+              </div>
             </div>
 
             <div className="p-5">
