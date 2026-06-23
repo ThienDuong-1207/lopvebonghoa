@@ -360,7 +360,7 @@ export default function StaffMakeupSearchBox({
                     <button
                       onClick={() => removeStudent(m.id)}
                       title="Xóa khỏi danh sách"
-                      className="ml-1 text-gray-300 hover:text-red-400 active:scale-95"
+                      className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl bg-red-400 text-white active:scale-95 active:bg-red-500"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
