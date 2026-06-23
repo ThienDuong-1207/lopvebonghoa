@@ -34,7 +34,7 @@ export default function AdminAttendanceSection({
 }: Props) {
   const [presentCount, setPresentCount] = useState(initPresentCount)
   const [absentCount, setAbsentCount] = useState(initAbsentCount)
-  const pendingCount = students.length - presentCount - absentCount
+  const pendingCount = Math.max(0, students.length - presentCount - absentCount)
 
   function handleStatusChange(prev: FullStatus, next: FullStatus) {
     const wasPresent = prev === 'present' || prev === 'makeup'

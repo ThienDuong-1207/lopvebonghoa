@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Search, Plus, Check, X } from 'lucide-react'
+import { Search, Check, X, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -254,45 +254,39 @@ export default function StaffMakeupSearchBox({
           <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
             {results.length > 0 ? (
               results.map((r) => (
-                <div key={r.id} className="border-b border-gray-50 px-4 py-3 last:border-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800">
-                        {r.nickname ?? r.full_name}
-                        {r.nickname && (
-                          <span className="text-xs font-normal text-gray-400">({r.full_name})</span>
-                        )}
-                        {r.payment_status === 'pending' && (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                            Chờ thu
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {r.home_class_name ?? '—'} · Buổi {r.used_sessions}/{r.total_sessions}
-                      </div>
-                      {classesForDay.length > 1 && (
-                        <select
-                          value={r.selectedClassId}
-                          onChange={(e) => updateResultClass(r.id, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600"
-                        >
-                          {classesForDay.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => addStudent(r)}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#C9A84C]/15 text-[#C9A84C] active:scale-95"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
+                <div
+                  key={r.id}
+                  className="cursor-pointer border-b border-gray-50 px-4 py-3 last:border-0 active:bg-amber-50"
+                  onClick={() => addStudent(r)}
+                >
+                  <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800">
+                    {r.nickname ?? r.full_name}
+                    {r.nickname && (
+                      <span className="text-xs font-normal text-gray-400">({r.full_name})</span>
+                    )}
+                    {r.payment_status === 'pending' && (
+                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                        Chờ thu
+                      </span>
+                    )}
                   </div>
+                  <div className="text-xs text-gray-400">
+                    {r.home_class_name ?? '—'} · Buổi {r.used_sessions}/{r.total_sessions}
+                  </div>
+                  {classesForDay.length > 1 && (
+                    <select
+                      value={r.selectedClassId}
+                      onChange={(e) => updateResultClass(r.id, e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600"
+                    >
+                      {classesForDay.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               ))
             ) : (
@@ -368,7 +362,7 @@ export default function StaffMakeupSearchBox({
                       title="Xóa khỏi danh sách"
                       className="ml-1 text-gray-300 hover:text-red-400 active:scale-95"
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
