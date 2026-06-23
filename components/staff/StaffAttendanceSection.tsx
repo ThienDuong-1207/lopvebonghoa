@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import AttendanceRow from './AttendanceRow'
+import StaffMakeupSearchBox from './StaffMakeupSearchBox'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 
 type Status = 'present' | 'absent' | null
@@ -31,11 +32,12 @@ export default function StaffAttendanceSection({
   assignedClassIds,
   initPresentCount,
   initAbsentCount,
-  totalCount,
+  totalCount: initTotalCount,
 }: Props) {
   const [presentCount, setPresentCount] = useState(initPresentCount)
   const [absentCount, setAbsentCount] = useState(initAbsentCount)
-  const pendingCount = totalCount - presentCount - absentCount
+  const [totalCount, setTotalCount] = useState(initTotalCount)
+  const pendingCount = Math.max(0, totalCount - presentCount - absentCount)
   const assignedSet = new Set(assignedClassIds)
 
   function handleStatusChange(prev: Status, next: Status) {
@@ -44,6 +46,14 @@ export default function StaffAttendanceSection({
     if (prev !== 'absent' && next === 'absent') setAbsentCount((c) => c + 1)
     if (prev === 'absent' && next !== 'absent') setAbsentCount((c) => c - 1)
   }
+
+  function handleMakeupStatsChange(totalDelta: number, presentDelta: number, absentDelta: number) {
+    setTotalCount((c) => c + totalDelta)
+    setPresentCount((c) => c + presentDelta)
+    setAbsentCount((c) => c + absentDelta)
+  }
+
+  const classesInfo = classesForDay.map((c) => ({ id: c.id, name: c.name }))
 
   return (
     <>
@@ -67,6 +77,13 @@ export default function StaffAttendanceSection({
           </div>
         </div>
       )}
+
+      <StaffMakeupSearchBox
+        classesForDay={classesInfo}
+        sessionDate={selectedDateStr}
+        profileId={profileId}
+        onStatsChange={handleMakeupStatsChange}
+      />
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {classesForDay.map((cls, clsIdx) => {

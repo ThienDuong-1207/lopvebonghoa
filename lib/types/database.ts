@@ -64,6 +64,7 @@ export interface Package {
   total_sessions: number
   used_sessions: number
   amount_paid: number
+  start_date: string
   paid_at: string | null
   marked_paid_by: string | null
   status: PackageStatus

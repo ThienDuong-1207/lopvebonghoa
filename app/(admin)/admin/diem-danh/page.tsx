@@ -55,7 +55,8 @@ export default async function AdminDiemDanhPage({ searchParams }: Props) {
         .select('*')
         .in('student_id', allIds)
         .neq('status', 'cancelled')
-        .order('created_at', { ascending: false })
+        .lte('start_date', selectedDate)
+        .order('start_date', { ascending: false })
 
       packages = eligiblePkgs ?? []
 

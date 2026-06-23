@@ -3,12 +3,13 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/supabase/queries'
 import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import StaffAttendanceSection from '@/components/staff/StaffAttendanceSection'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, DAY_FULL } from '@/lib/types/database'
 
 interface Props {
-  searchParams: { dow?: string }
+  searchParams: { dow?: string; week?: string }
 }
 
 export default async function DiemDanhPage({ searchParams }: Props) {
@@ -18,12 +19,22 @@ export default async function DiemDanhPage({ searchParams }: Props) {
   const today = new Date()
   const todayDow = today.getDay()
   const selectedDow = searchParams.dow !== undefined ? Number(searchParams.dow) : todayDow
+  // weekOffset ≤ 0: không cho chọn tuần tương lai
+  const weekOffset = Math.min(0, Number(searchParams.week ?? 0))
 
-  // Tính ngày thực tế trong tuần hiện tại (CN=0 → 7 để tránh offset âm)
+  // Tính ngày thực tế (CN=0 → 7 để tránh offset âm) + dịch theo tuần
   const toW = (d: number) => (d === 0 ? 7 : d)
   const d = new Date(today)
-  d.setDate(today.getDate() + toW(selectedDow) - toW(todayDow))
+  d.setDate(today.getDate() + toW(selectedDow) - toW(todayDow) + weekOffset * 7)
   const selectedDateStr = d.toISOString().split('T')[0]
+
+  // Thứ Hai và Chủ Nhật của tuần đang chọn (để hiện range trên header)
+  const monday = new Date(today)
+  monday.setDate(today.getDate() + (1 - toW(todayDow)) + weekOffset * 7)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const fmtDMY = (dt: Date) =>
+    `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`
 
   // Lấy tất cả lớp active
   const { data: rawClasses } = await supabase
@@ -76,7 +87,8 @@ export default async function DiemDanhPage({ searchParams }: Props) {
         .select('*')
         .in('student_id', ids)
         .neq('status', 'cancelled')
-        .order('created_at', { ascending: false })
+        .lte('start_date', selectedDateStr)
+        .order('start_date', { ascending: false })
       packages = pkgs ?? []
     }
   }
@@ -91,16 +103,49 @@ export default async function DiemDanhPage({ searchParams }: Props) {
   return (
     <div className="p-4">
 
+      {/* ── Điều hướng tuần ── */}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <Link
+          href={`/staff/diem-danh?dow=${selectedDow}&week=${weekOffset - 1}`}
+          className="flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm active:scale-95"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          Tuần trước
+        </Link>
+
+        <div className="text-center">
+          {weekOffset === 0 ? (
+            <span className="text-xs font-semibold text-[#0D2545]">Tuần này</span>
+          ) : (
+            <span className="text-xs font-medium text-gray-500">
+              {fmtDMY(monday)} – {fmtDMY(sunday)}
+            </span>
+          )}
+        </div>
+
+        {weekOffset < 0 ? (
+          <Link
+            href={`/staff/diem-danh?dow=${selectedDow}&week=${weekOffset + 1}`}
+            className="flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm active:scale-95"
+          >
+            Tuần sau
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : (
+          <div className="w-[90px]" />
+        )}
+      </div>
+
       {/* ── Tabs ngày ── */}
       <div className="mb-4 grid grid-cols-7 gap-1.5">
         {[1, 2, 3, 4, 5, 6, 0].map((dow) => {
           const hasClass   = daysWithClass.has(dow)
-          const isToday    = dow === todayDow
+          const isToday    = dow === todayDow && weekOffset === 0
           const isSelected = dow === selectedDow
           return (
             <Link
               key={dow}
-              href={`/staff/diem-danh?dow=${dow}`}
+              href={`/staff/diem-danh?dow=${dow}&week=${weekOffset}`}
               className={`rounded-xl py-2.5 text-center text-xs font-medium shadow-sm transition-colors ${
                 isSelected && isToday
                   ? 'bg-[#0D2545] text-white ring-2 ring-[#C9A84C]'
@@ -128,7 +173,7 @@ export default async function DiemDanhPage({ searchParams }: Props) {
       <div className="mb-3">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
           {DAY_FULL[selectedDow]}
-          {selectedDow === todayDow && (
+          {selectedDow === todayDow && weekOffset === 0 && (
             <span className="ml-2 rounded-full bg-[#0D2545] px-2 py-0.5 text-[10px] font-semibold text-white">
               Hôm nay
             </span>

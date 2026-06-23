@@ -77,9 +77,11 @@ export default function MakeupSearchBox({ classId, sessionDate, profileId, exclu
       const ids = students.map((s) => s.id)
       const [{ data: pkgs }, { data: sessions }] = await Promise.all([
         supabase.from('packages')
-          .select('id, student_id, used_sessions, total_sessions, payment_status')
+          .select('id, student_id, used_sessions, total_sessions, payment_status, start_date')
           .in('student_id', ids)
-          .eq('status', 'active'),
+          .neq('status', 'cancelled')
+          .lte('start_date', sessionDate)
+          .order('start_date', { ascending: false }),
         supabase.from('sessions')
           .select('id, student_id, status')
           .eq('class_id', classId)

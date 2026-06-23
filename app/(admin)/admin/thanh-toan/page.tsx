@@ -42,10 +42,12 @@ async function createPackage(formData: FormData) {
   const isPending = formData.get('payment_status') === 'pending'
   const amountRaw = formData.get('amount_paid') as string
   const paidAtRaw = formData.get('paid_at') as string
+  const startDateRaw = formData.get('start_date') as string
 
   const { error } = await supabase.from('packages').insert({
     student_id:      studentId,
     amount_paid:     isPending ? 0 : Number(amountRaw),
+    start_date:      startDateRaw || new Date().toISOString().split('T')[0],
     paid_at:         isPending ? null : (paidAtRaw || null),
     note:            (formData.get('note') as string) || null,
     total_sessions:  Number(formData.get('total_sessions') || 8),
@@ -138,13 +140,17 @@ export default async function ThanhToanPage({ searchParams }: Props) {
                 <p className="mt-1 text-xs text-gray-400">Chọn "Ghi nợ" nếu học sinh đã học nhưng chưa đóng tiền</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Số buổi</label>
                   <Input name="total_sessions" type="number" required min={1} defaultValue={8} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày đóng</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày bắt đầu học</label>
+                  <Input name="start_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày đóng tiền</label>
                   <Input name="paid_at" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
                 </div>
               </div>
