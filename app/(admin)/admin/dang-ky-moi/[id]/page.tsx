@@ -8,8 +8,7 @@ import { ChevronLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import type { Registration, Class } from '@/lib/types/database'
-import { DAY_SHORT } from '@/lib/types/database'
+import type { Registration } from '@/lib/types/database'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Chờ xử lý',
@@ -24,22 +23,18 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'dest
   rejected: 'outline',
 }
 
-function formatSlot(c: Pick<Class, 'name' | 'days_of_week' | 'time_start' | 'time_end'>) {
-  const days = [...c.days_of_week].sort((a, b) => a - b).map((d) => DAY_SHORT[d]).join(', ')
-  return `${c.name} — ${days} · ${c.time_start.slice(0, 5)}–${c.time_end.slice(0, 5)}`
-}
-
 async function saveRegistration(formData: FormData) {
   'use server'
   const id = formData.get('id') as string
   const supabase = createClient()
+  const birth_year = formData.get('birth_year') ? Number(formData.get('birth_year')) : null
+  const currentYear = new Date().getFullYear()
   await supabase.from('registrations').update({
-    child_name:     (formData.get('child_name') as string).trim(),
-    child_age:      formData.get('child_age') ? Number(formData.get('child_age')) : null,
-    parent_name:    (formData.get('parent_name') as string).trim(),
-    phone:          (formData.get('phone') as string).trim(),
-    preferred_slot: (formData.get('preferred_slot') as string) || null,
-    message:        (formData.get('message') as string) || null,
+    child_name:  (formData.get('child_name') as string).trim(),
+    child_age:   birth_year ? currentYear - birth_year : null,
+    parent_name: (formData.get('parent_name') as string).trim(),
+    phone:       (formData.get('phone') as string).trim(),
+    message:     (formData.get('message') as string) || null,
   }).eq('id', id)
   redirect(`/admin/dang-ky-moi/${id}`)
 }
@@ -79,19 +74,19 @@ async function convertToStudent(formData: FormData) {
     parentId = newParent!.id
   }
 
-  // Tạo học sinh — tính birth_year từ age
+  // Tạo học sinh
   const currentYear = new Date().getFullYear()
-  const birth_year  = reg.child_age ? currentYear - reg.child_age : null
-  const notes       = reg.preferred_slot ? `Ca mong muốn: ${reg.preferred_slot}` : null
+  const age         = reg.child_age ?? null
+  const birth_year  = age ? currentYear - age : null
 
   const { data: student, error: studentErr } = await supabase
     .from('students')
     .insert({
       full_name:  reg.child_name,
-      age:        reg.child_age ?? null,
+      age,
       birth_year,
       parent_id:  parentId,
-      notes,
+      notes:      reg.message || null,
       status:     'active',
     })
     .select('id')
@@ -112,15 +107,11 @@ interface Props { params: { id: string } }
 export default async function RegistrationDetailPage({ params }: Props) {
   const supabase = createClient()
 
-  const [{ data: reg }, { data: rawClasses }] = await Promise.all([
-    supabase.from('registrations').select('*').eq('id', params.id).single(),
-    supabase.from('classes').select('id, name, days_of_week, time_start, time_end').eq('is_active', true).order('time_start'),
-  ])
+  const { data: reg } = await supabase.from('registrations').select('*').eq('id', params.id).single()
 
   if (!reg) notFound()
 
   const registration = reg as Registration
-  const classes = (rawClasses ?? []) as Pick<Class, 'id' | 'name' | 'days_of_week' | 'time_start' | 'time_end'>[]
 
   return (
     <>
@@ -196,39 +187,36 @@ export default async function RegistrationDetailPage({ params }: Props) {
               <h3 className="mb-4 font-semibold text-gray-800 dark:text-gray-100">Thông tin đăng ký</h3>
               <input type="hidden" name="id" value={registration.id} />
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tên con</label>
-                    <Input name="child_name" defaultValue={registration.child_name} required />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tuổi</label>
-                    <Input name="child_age" type="number" min={3} max={12} defaultValue={registration.child_age ?? ''} />
-                  </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tên học viên</label>
+                  <Input name="child_name" defaultValue={registration.child_name} required />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Năm sinh
+                    {registration.child_age && (
+                      <span className="ml-1.5 text-xs font-normal text-[#C9A84C]">({registration.child_age} tuổi)</span>
+                    )}
+                  </label>
+                  <Input
+                    name="birth_year"
+                    type="number"
+                    min={2005}
+                    max={2023}
+                    defaultValue={registration.child_age ? new Date().getFullYear() - registration.child_age : ''}
+                    placeholder="2018"
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tên phụ huynh</label>
                   <Input name="parent_name" defaultValue={registration.parent_name} required />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Số điện thoại</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SĐT liên lạc</label>
                   <Input name="phone" type="tel" defaultValue={registration.phone} required />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ca học mong muốn</label>
-                  <select
-                    name="preferred_slot"
-                    defaultValue={registration.preferred_slot ?? ''}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-                  >
-                    <option value="">Linh hoạt / Chưa biết</option>
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.name}>{formatSlot(c)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ghi chú / Tin nhắn</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ghi chú</label>
                   <Textarea name="message" defaultValue={registration.message ?? ''} rows={3} />
                 </div>
                 <button

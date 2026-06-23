@@ -202,7 +202,7 @@ export default async function HomePage() {
           <h2 className="mb-10 text-center text-3xl font-bold text-white">
             Bắt đầu hành trình sáng tạo
           </h2>
-          <RegisterForm classes={classes ?? []} />
+          <RegisterForm />
         </div>
       </section>
     </>

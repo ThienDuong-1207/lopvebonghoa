@@ -77,17 +77,17 @@ async function convertToStudent(registrationId: string) {
 
   // Tạo học sinh
   const currentYear = new Date().getFullYear()
-  const birth_year = reg.child_age ? currentYear - reg.child_age : null
-  const notes = reg.preferred_slot ? `Ca mong muốn: ${reg.preferred_slot}` : null
+  const age        = reg.child_age ?? null
+  const birth_year = age ? currentYear - age : null
   const { data: student, error: studentErr } = await supabase
     .from('students')
     .insert({
-      full_name: reg.child_name,
-      age: reg.child_age ?? null,
+      full_name:  reg.child_name,
+      age,
       birth_year,
-      parent_id: parentId,
-      notes,
-      status: 'active',
+      parent_id:  parentId,
+      notes:      reg.message || null,
+      status:     'active',
     })
     .select('id')
     .single()
@@ -165,18 +165,15 @@ export default async function DangKyMoiPage({ searchParams }: Props) {
               <CardContent className="py-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold dark:text-gray-100">{r.child_name}</span>
-                      {r.child_age && <span className="text-sm text-gray-400">{r.child_age} tuổi</span>}
+                      {r.child_age && <span className="text-sm text-gray-400">· {r.child_age} tuổi</span>}
                       <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-300">
                       PH: {r.parent_name} —{' '}
                       <a href={`tel:${r.phone}`} className="text-[#C9A84C] hover:underline">{r.phone}</a>
                     </div>
-                    {r.preferred_slot && (
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Ca mong muốn: {r.preferred_slot}</div>
-                    )}
                     {r.message && (
                       <div className="mt-2 rounded-lg bg-gray-50 p-2 text-sm text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                         {r.message}
