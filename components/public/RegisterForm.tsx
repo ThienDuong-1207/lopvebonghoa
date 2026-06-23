@@ -5,8 +5,26 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { CheckCircle2 } from 'lucide-react'
+import { DAY_SHORT } from '@/lib/types/database'
 
-export default function RegisterForm() {
+interface ClassOption {
+  id: string
+  name: string
+  days_of_week: number[]
+  time_start: string
+  time_end: string
+}
+
+interface Props {
+  classes: ClassOption[]
+}
+
+function formatSlot(c: ClassOption) {
+  const days = [...c.days_of_week].sort((a, b) => a - b).map((d) => DAY_SHORT[d]).join(', ')
+  return `${c.name} — ${days} · ${c.time_start.slice(0, 5)}–${c.time_end.slice(0, 5)}`
+}
+
+export default function RegisterForm({ classes }: Props) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -69,7 +87,17 @@ export default function RegisterForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Ca học mong muốn</label>
-          <Input name="preferred_slot" placeholder="VD: Thứ 7 sáng, cuối tuần..." />
+          <select
+            name="preferred_slot"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <option value="">Linh hoạt / Chưa biết</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.name}>
+                {formatSlot(c)}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Tin nhắn</label>

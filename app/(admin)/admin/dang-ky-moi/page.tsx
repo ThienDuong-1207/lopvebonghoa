@@ -31,7 +31,10 @@ const TABS = [
 async function updateStatus(id: string, status: string) {
   'use server'
   const supabase = createClient()
-  await supabase.from('registrations').update({ status }).eq('id', id)
+  await supabase.from('registrations').update({
+    status,
+    ...(status === 'contacted' ? { contacted_at: new Date().toISOString() } : {}),
+  }).eq('id', id)
   redirect('/admin/dang-ky-moi')
 }
 
@@ -73,12 +76,15 @@ async function convertToStudent(registrationId: string) {
   }
 
   // Tạo học sinh
+  const currentYear = new Date().getFullYear()
+  const birth_year = reg.child_age ? currentYear - reg.child_age : null
   const notes = reg.preferred_slot ? `Ca mong muốn: ${reg.preferred_slot}` : null
   const { data: student, error: studentErr } = await supabase
     .from('students')
     .insert({
       full_name: reg.child_name,
       age: reg.child_age ?? null,
+      birth_year,
       parent_id: parentId,
       notes,
       status: 'active',
@@ -182,6 +188,12 @@ export default async function DangKyMoiPage({ searchParams }: Props) {
                   </div>
 
                   <div className="flex flex-col gap-2">
+                    <Link
+                      href={`/admin/dang-ky-moi/${r.id}`}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-center text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
+                    >
+                      Xem / Sửa
+                    </Link>
                     {r.status === 'pending' && (
                       <>
                         <form action={updateStatus.bind(null, r.id, 'contacted')}>
@@ -199,7 +211,7 @@ export default async function DangKyMoiPage({ searchParams }: Props) {
                     {r.status === 'contacted' && (
                       <form action={convertToStudent.bind(null, r.id)}>
                         <button className="w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700">
-                          Đã vào học →
+                          Thêm vào lớp →
                         </button>
                       </form>
                     )}

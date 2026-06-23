@@ -140,10 +140,10 @@ export default async function HomePage() {
           <div className="mx-auto mb-14 max-w-sm rounded-2xl border-2 border-[#C9A84C]/30 bg-white p-8 text-center shadow-sm">
             <div className="mb-1 text-sm font-medium text-gray-400">Gói học phí</div>
             <div className="my-4 flex items-baseline justify-center gap-1">
-              <span className="text-5xl font-bold text-[#0D2545]">1.200.000</span>
+              <span className="text-5xl font-bold text-[#0D2545]">600.000</span>
               <span className="text-xl text-gray-400">đ</span>
             </div>
-            <div className="mb-6 text-sm text-gray-500">cho 8 buổi học</div>
+            <div className="mb-6 text-sm text-gray-500">/ tháng</div>
             <div className="space-y-2.5 text-left">
               {[
                 { icon: Clock, text: 'Mỗi buổi 90 phút' },
@@ -202,7 +202,7 @@ export default async function HomePage() {
           <h2 className="mb-10 text-center text-3xl font-bold text-white">
             Bắt đầu hành trình sáng tạo
           </h2>
-          <RegisterForm />
+          <RegisterForm classes={classes ?? []} />
         </div>
       </section>
     </>
