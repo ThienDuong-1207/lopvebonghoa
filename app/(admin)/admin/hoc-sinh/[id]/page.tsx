@@ -64,6 +64,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   const oldPackages    = (packages ?? []).filter((p: Package) => p.status !== 'active')
   const packageCount   = (packages ?? []).length
   const sessionCount   = (packages ?? []).reduce((n, p) => n + ((p as Package & { sessions: Session[] }).sessions?.length ?? 0), 0)
+  const allSessions    = (packages ?? [])
+    .flatMap((p) => (p as Package & { sessions: Session[] }).sessions ?? [])
+    .sort((a, b) => b.session_date.localeCompare(a.session_date))
 
   const displayName = student.full_name
     .split(' ')
@@ -252,11 +255,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             </div>
 
             <div className="p-5">
-              {activePackage?.sessions && (activePackage.sessions as Session[]).length > 0 ? (
+              {allSessions.length > 0 ? (
                 <div className="max-h-80 space-y-1.5 overflow-y-auto">
-                  {(activePackage.sessions as Session[])
-                    .sort((a, b) => b.session_date.localeCompare(a.session_date))
-                    .map((s: Session) => {
+                  {allSessions.map((s: Session) => {
                       const d = new Date(s.session_date)
                       const dow = DAY_SHORT[d.getDay()]
                       return (
