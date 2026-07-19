@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Topbar from '@/components/admin/Topbar'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -57,6 +58,16 @@ async function createPackage(formData: FormData) {
     payment_status:  isPending ? 'pending' : 'paid',
   })
   if (error) redirect(`/admin/thanh-toan?error=db&msg=${encodeURIComponent(error.message)}`)
+
+  // Auto-resolve near_end / package_ended alerts khi học sinh gia hạn
+  const admin = createAdminClient()
+  await admin
+    .from('alerts')
+    .update({ resolved: true, resolved_at: new Date().toISOString() })
+    .eq('student_id', studentId)
+    .in('type', ['near_end', 'package_ended'])
+    .eq('resolved', false)
+
   redirect('/admin/thanh-toan?success=1')
 }
 

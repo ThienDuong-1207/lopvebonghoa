@@ -6,12 +6,19 @@ export async function PATCH(_: Request, { params }: { params: { id: string } }) 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // profiles.id ≠ auth.users.id — cần lookup đúng FK
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single()
+
   const { data, error } = await supabase
     .from('alerts')
     .update({
       resolved: true,
       resolved_at: new Date().toISOString(),
-      resolved_by: user.id,
+      resolved_by: profile?.id ?? null,
     })
     .eq('id', params.id)
     .select('resolved, resolved_at')

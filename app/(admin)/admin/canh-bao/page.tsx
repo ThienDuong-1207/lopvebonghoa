@@ -9,6 +9,9 @@ import { CheckCircle2 } from 'lucide-react'
 export default async function CanhBaoPage() {
   const supabase = createClient()
 
+  // Refresh inactive alerts mỗi khi admin vào trang
+  await supabase.rpc('fn_refresh_inactive_alerts')
+
   const { data: alerts } = await supabase
     .from('alerts')
     .select(`
@@ -59,15 +62,19 @@ export default async function CanhBaoPage() {
     return attended.length > 0 ? attended[attended.length - 1] : null
   }
 
+  // Dùng Date(y, m-1, d) để tránh timezone bug khi parse YYYY-MM-DD
   function getNextSessionDate(lastDate: string | null, daysOfWeek: number[]): string | null {
     if (!lastDate || daysOfWeek.length === 0) return null
-    const d = new Date(lastDate)
-    d.setDate(d.getDate() + 1)  // bắt đầu từ ngày hôm sau
+    const [y, m, d] = lastDate.split('-').map(Number)
+    const date = new Date(y, m - 1, d + 1) // local time, bắt đầu từ ngày hôm sau
     for (let i = 0; i < 14; i++) {
-      if (daysOfWeek.includes(d.getDay())) {
-        return d.toISOString().split('T')[0]
+      if (daysOfWeek.includes(date.getDay())) {
+        const yy = date.getFullYear()
+        const mm = String(date.getMonth() + 1).padStart(2, '0')
+        const dd = String(date.getDate()).padStart(2, '0')
+        return `${yy}-${mm}-${dd}`
       }
-      d.setDate(d.getDate() + 1)
+      date.setDate(date.getDate() + 1)
     }
     return null
   }

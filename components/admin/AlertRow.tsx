@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { buildZaloContent, openZalo } from '@/lib/utils/zalo'
+import { resolveAlert, markZaloSent } from '@/app/(admin)/admin/canh-bao/actions'
 import type { AlertType } from '@/lib/types/database'
 import Btn from '@/components/admin/Btn'
 
@@ -25,13 +27,11 @@ const ALERT_LABEL: Record<string, string> = {
   near_end: 'Sắp hết gói',
   package_ended: 'Hết gói',
   inactive: 'Nghỉ >14 ngày',
-  new_registration: 'Đăng ký mới',
 }
 const ALERT_COLOR: Record<string, 'destructive' | 'default' | 'secondary'> = {
   package_ended: 'destructive',
   near_end: 'default',
   inactive: 'secondary',
-  new_registration: 'secondary',
 }
 
 export default function AlertRow({
@@ -48,9 +48,11 @@ export default function AlertRow({
   zaloSentAt,
   resolved,
 }: Props) {
+  const router = useRouter()
   const [sent, setSent] = useState(!!zaloSentAt)
   const [confirming, setConfirming] = useState(false)
   const [done, setDone] = useState(resolved)
+  const [resolving, setResolving] = useState(false)
 
   const content = buildZaloContent({
     phone: parentPhone,
@@ -66,13 +68,16 @@ export default function AlertRow({
 
   function handleZalo() {
     openZalo(parentPhone, content)
-    setConfirming(true)   // chờ admin xác nhận đã gửi
+    setConfirming(true)
   }
 
   async function handleConfirmSent() {
-    await fetch(`/api/alerts/${alertId}/zalo-sent`, { method: 'PATCH' })
-    setSent(true)
-    setConfirming(false)
+    try {
+      await markZaloSent(alertId)
+      setSent(true)
+    } finally {
+      setConfirming(false)
+    }
   }
 
   function handleCancelConfirm() {
@@ -80,8 +85,15 @@ export default function AlertRow({
   }
 
   async function handleResolve() {
-    await fetch(`/api/alerts/${alertId}/resolve`, { method: 'PATCH' })
-    setDone(true)
+    setResolving(true)
+    try {
+      await resolveAlert(alertId)
+      // Ẩn sau khi DB xác nhận thành công, rồi refresh count
+      setDone(true)
+      router.refresh()
+    } catch {
+      setResolving(false)
+    }
   }
 
   if (done) return null
@@ -114,7 +126,9 @@ export default function AlertRow({
             {sent ? '📱 Gửi lại' : '📱 Zalo'}
           </Btn>
         )}
-        <Btn size="xs" variant="outline" onClick={handleResolve}>✓ Xong</Btn>
+        <Btn size="xs" variant="outline" onClick={handleResolve} disabled={resolving}>
+          {resolving ? '...' : '✓ Xong'}
+        </Btn>
       </div>
     </div>
   )

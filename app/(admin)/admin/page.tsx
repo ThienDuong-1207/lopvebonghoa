@@ -18,13 +18,11 @@ const ALERT_LABEL: Record<string, string> = {
   near_end: 'Sắp hết gói',
   package_ended: 'Hết gói',
   inactive: 'Nghỉ >14 ngày',
-  new_registration: 'Đăng ký mới',
 }
 const ALERT_DOT: Record<string, string> = {
   near_end: 'bg-amber-400',
   package_ended: 'bg-red-500',
   inactive: 'bg-gray-400',
-  new_registration: 'bg-blue-400',
 }
 
 function formatTime(t: string) { return t.slice(0, 5) }
