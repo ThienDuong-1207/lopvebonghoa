@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import MetricCard from '@/components/admin/MetricCard'
 import RevenueChart from '@/components/admin/RevenueChart'
-import AttendanceChart from '@/components/admin/AttendanceChart'
 import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -35,10 +34,6 @@ export default async function AdminDashboard() {
   const todayStr = today.toISOString().split('T')[0]
   const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
 
-  const weekStart = new Date(today)
-  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7))
-  const weekStartStr = weekStart.toISOString().split('T')[0]
-
   const sixMonthsAgo = new Date(today)
   sixMonthsAgo.setMonth(today.getMonth() - 5)
   sixMonthsAgo.setDate(1)
@@ -56,7 +51,6 @@ export default async function AdminDashboard() {
     { data: alerts },
     { data: monthPayments },
     { data: allPayments },
-    { data: weekSessions },
     { data: attendanceLog },
   ] = await Promise.all([
     supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
@@ -67,7 +61,6 @@ export default async function AdminDashboard() {
     supabase.from('alerts').select('*, students(full_name)').eq('resolved', false).order('triggered_at', { ascending: false }).limit(4),
     supabase.from('packages').select('amount_paid').gte('paid_at', monthStart),
     supabase.from('packages').select('amount_paid, paid_at').gte('paid_at', sixMonthsAgo.toISOString().split('T')[0]),
-    supabase.from('sessions').select('session_date, status').gte('session_date', weekStartStr),
     supabase.from('sessions')
       .select('session_date, class_id, checked_in_by, profiles!checked_in_by(full_name)')
       .gte('session_date', fourteenDaysAgoStr)
@@ -85,15 +78,6 @@ export default async function AdminDashboard() {
     return { month: MONTH_NAMES[d.getMonth()], revenue: rev / 1_000_000 }
   })
 
-  const attendanceChartData = [1, 2, 3, 4, 5, 6, 0].map((dow) => {
-    const d = new Date(weekStart)
-    d.setDate(weekStart.getDate() + ((dow - 1 + 7) % 7))
-    const dateStr = d.toISOString().split('T')[0]
-    const count = (weekSessions ?? []).filter(
-      (s: { session_date: string; status: string }) => s.session_date === dateStr && s.status === 'present'
-    ).length
-    return { day: DAY_SHORT[dow], count, isToday: dow === todayDow }
-  })
 
   const todayClasses = (classes ?? []).filter((c: Class) => c.days_of_week.includes(todayDow))
 
@@ -160,16 +144,70 @@ export default async function AdminDashboard() {
           />
         </div>
 
-        {/* Row 2 — Chart + Cảnh báo */}
+        {/* Row 2 — Kiểm soát điểm danh + Cảnh báo */}
         <div className="mb-5 grid gap-4 xl:grid-cols-5">
-          {/* Attendance chart */}
+          {/* Kiểm soát điểm danh */}
           <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800 xl:col-span-3">
-            <div className="mb-1 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800 dark:text-gray-100">Điểm danh tuần này</h3>
-              <span className="text-xs text-gray-400">{DAY_FULL[todayDow]}</span>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-100">Kiểm soát điểm danh</h3>
+                <p className="mt-0.5 text-xs text-gray-400">14 ngày gần nhất — buổi học có lớp</p>
+              </div>
+              <Link href="/admin/diem-danh" className="text-xs font-medium text-[#C9A84C] hover:underline">
+                Điểm danh bù →
+              </Link>
             </div>
-            <p className="mb-4 text-xs text-gray-400">Số lượt có mặt theo ngày · màu vàng = hôm nay</p>
-            <AttendanceChart data={attendanceChartData} />
+
+            {attendanceHistory.length === 0 ? (
+              <div className="flex h-32 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                <p className="text-sm text-gray-400">Chưa có buổi học nào</p>
+              </div>
+            ) : (
+              <div className="max-h-72 space-y-1.5 overflow-y-auto">
+                {attendanceHistory.map((row) => {
+                  const [, mo, dy] = row.date.split('-')
+                  const dateLabel = `${dy}/${mo}`
+                  return (
+                    <div
+                      key={`${row.date}-${row.classId}`}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                        row.attended ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-red-50 dark:bg-red-900/10'
+                      }`}
+                    >
+                      {row.attended ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 shrink-0 text-red-400" />
+                      )}
+                      <div className="w-24 shrink-0">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          {DAY_SHORT[row.dow]} {dateLabel}
+                        </span>
+                        {row.date === todayStr && (
+                          <span className="ml-1.5 rounded-full bg-[#0D2545] px-1.5 py-0.5 text-[9px] font-bold text-white">HÔM NAY</span>
+                        )}
+                      </div>
+                      <span className="w-28 shrink-0 truncate text-xs text-gray-500 dark:text-gray-400">{row.className}</span>
+                      <div className="flex-1">
+                        {row.attended ? (
+                          <span className="text-xs text-emerald-700 dark:text-emerald-400">{row.staffNames.join(', ')}</span>
+                        ) : (
+                          <span className="text-xs font-medium text-red-500">Chưa điểm danh</span>
+                        )}
+                      </div>
+                      {!row.attended && (
+                        <Link
+                          href={`/admin/diem-danh?date=${row.date}&class_id=${row.classId}`}
+                          className="shrink-0 rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
+                        >
+                          Điểm bù
+                        </Link>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Cảnh báo */}
@@ -293,85 +331,6 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 4 — Lịch sử điểm danh giảng viên */}
-        {attendanceHistory.length > 0 && (
-          <div className="mt-5 rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-800 dark:text-gray-100">Kiểm soát điểm danh</h3>
-                <p className="mt-0.5 text-xs text-gray-400">14 ngày gần nhất — buổi học có lớp</p>
-              </div>
-              <Link
-                href="/admin/diem-danh"
-                className="text-xs font-medium text-[#C9A84C] hover:underline"
-              >
-                Điểm danh bù →
-              </Link>
-            </div>
-
-            <div className="space-y-1.5">
-              {attendanceHistory.map((row, idx) => {
-                const [, mo, dy] = row.date.split('-')
-                const dateLabel = `${dy}/${mo}`
-                return (
-                  <div
-                    key={`${row.date}-${row.classId}`}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
-                      row.attended
-                        ? 'bg-emerald-50 dark:bg-emerald-900/10'
-                        : 'bg-red-50 dark:bg-red-900/10'
-                    }`}
-                  >
-                    {/* Icon trạng thái */}
-                    {row.attended ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 shrink-0 text-red-400" />
-                    )}
-
-                    {/* Ngày + thứ */}
-                    <div className="w-28 shrink-0">
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        {DAY_SHORT[row.dow]} {dateLabel}
-                      </span>
-                      {row.date === todayStr && (
-                        <span className="ml-1.5 rounded-full bg-[#0D2545] px-1.5 py-0.5 text-[9px] font-bold text-white">
-                          HÔM NAY
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Tên lớp */}
-                    <span className="w-32 shrink-0 truncate text-xs text-gray-500 dark:text-gray-400">
-                      {row.className}
-                    </span>
-
-                    {/* Giảng viên / trạng thái */}
-                    <div className="flex-1">
-                      {row.attended ? (
-                        <span className="text-xs text-emerald-700 dark:text-emerald-400">
-                          {row.staffNames.join(', ')}
-                        </span>
-                      ) : (
-                        <span className="text-xs font-medium text-red-500">Chưa điểm danh</span>
-                      )}
-                    </div>
-
-                    {/* Link điểm bù nếu chưa điểm */}
-                    {!row.attended && (
-                      <Link
-                        href={`/admin/diem-danh?date=${row.date}&class_id=${row.classId}`}
-                        className="shrink-0 rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
-                      >
-                        Điểm bù
-                      </Link>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </>
   )
