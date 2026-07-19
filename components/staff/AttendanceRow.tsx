@@ -18,10 +18,11 @@ interface Props {
   classId: string
   sessionDate: string
   profileId: string
+  readOnly?: boolean
   onStatusChange?: (prev: Status, next: Status) => void
 }
 
-export default function AttendanceRow({ student, pkg, session, classId, sessionDate, profileId, onStatusChange }: Props) {
+export default function AttendanceRow({ student, pkg, session, classId, sessionDate, profileId, readOnly = false, onStatusChange }: Props) {
   const initials = student.full_name.split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase()
 
   const initStatus: Status = session?.status === 'makeup' ? 'present' : (session?.status as Status ?? null)
@@ -37,19 +38,22 @@ export default function AttendanceRow({ student, pkg, session, classId, sessionD
     const prev = status
     try {
       if (sessionId) {
-        const { error } = await supabase.from('sessions').update({ status: next }).eq('id', sessionId)
+        const { error } = await supabase.from('sessions').update({ status: next, checked_in_by: profileId }).eq('id', sessionId)
         if (error) throw error
       } else {
         const { data, error } = await supabase
           .from('sessions')
-          .insert({
-            package_id:    pkg.id,
-            student_id:    student.id,
-            class_id:      classId,
-            session_date:  sessionDate,
-            checked_in_by: profileId,
-            status:        next,
-          })
+          .upsert(
+            {
+              package_id:    pkg.id,
+              student_id:    student.id,
+              class_id:      classId,
+              session_date:  sessionDate,
+              checked_in_by: profileId,
+              status:        next,
+            },
+            { onConflict: 'student_id,class_id,session_date', ignoreDuplicates: false }
+          )
           .select('id')
           .single()
         if (error) throw error
@@ -96,33 +100,45 @@ export default function AttendanceRow({ student, pkg, session, classId, sessionD
         </div>
       </div>
 
-      {/* Right: buttons */}
-      <div className="flex shrink-0 gap-1.5">
-        <button
-          onClick={() => select('present')}
-          disabled={loading}
-          aria-label="Có mặt"
-          className={`${btnBase} ${
-            status === 'present'
-              ? 'bg-emerald-500 text-white shadow-sm'
-              : 'bg-gray-100 text-gray-400 active:bg-emerald-100 active:text-emerald-600'
-          }`}
-        >
-          <Check className="h-5 w-5" strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={() => select('absent')}
-          disabled={loading}
-          aria-label="Vắng"
-          className={`${btnBase} ${
-            status === 'absent'
-              ? 'bg-red-400 text-white shadow-sm'
-              : 'bg-gray-100 text-gray-400 active:bg-red-100 active:text-red-400'
-          }`}
-        >
-          <X className="h-5 w-5" strokeWidth={2.5} />
-        </button>
-      </div>
+      {/* Right: buttons hoặc badge (readOnly) */}
+      {readOnly ? (
+        <div className="shrink-0">
+          {status === 'present' ? (
+            <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Có mặt</span>
+          ) : status === 'absent' ? (
+            <span className="rounded-lg bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-500">Vắng</span>
+          ) : (
+            <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-xs text-gray-400">—</span>
+          )}
+        </div>
+      ) : (
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            onClick={() => select('present')}
+            disabled={loading}
+            aria-label="Có mặt"
+            className={`${btnBase} ${
+              status === 'present'
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-400 active:bg-emerald-100 active:text-emerald-600'
+            }`}
+          >
+            <Check className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+          <button
+            onClick={() => select('absent')}
+            disabled={loading}
+            aria-label="Vắng"
+            className={`${btnBase} ${
+              status === 'absent'
+                ? 'bg-red-400 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-400 active:bg-red-100 active:text-red-400'
+            }`}
+          >
+            <X className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

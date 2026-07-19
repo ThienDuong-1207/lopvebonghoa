@@ -36,20 +36,23 @@ export default function CheckinButton({
       if (currentSessionId) {
         const { error } = await supabase
           .from('sessions')
-          .update({ status: next })
+          .update({ status: next, checked_in_by: profileId })
           .eq('id', currentSessionId)
         if (error) throw error
       } else {
         const { data, error } = await supabase
           .from('sessions')
-          .insert({
-            package_id:    packageId,
-            student_id:    studentId,
-            class_id:      classId,
-            session_date:  sessionDate,
-            checked_in_by: profileId,
-            status:        next,
-          })
+          .upsert(
+            {
+              package_id:    packageId,
+              student_id:    studentId,
+              class_id:      classId,
+              session_date:  sessionDate,
+              checked_in_by: profileId,
+              status:        next,
+            },
+            { onConflict: 'student_id,class_id,session_date', ignoreDuplicates: false }
+          )
           .select('id')
           .single()
         if (error) throw error

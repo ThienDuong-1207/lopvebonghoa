@@ -20,6 +20,7 @@ interface Props {
   initPresentCount: number
   initAbsentCount: number
   totalCount: number
+  readOnly?: boolean
 }
 
 export default function StaffAttendanceSection({
@@ -33,6 +34,7 @@ export default function StaffAttendanceSection({
   initPresentCount,
   initAbsentCount,
   totalCount: initTotalCount,
+  readOnly = false,
 }: Props) {
   const [presentCount, setPresentCount] = useState(initPresentCount)
   const [absentCount, setAbsentCount] = useState(initAbsentCount)
@@ -122,6 +124,7 @@ export default function StaffAttendanceSection({
                       classId={cls.id}
                       sessionDate={selectedDateStr}
                       profileId={profileId}
+                      readOnly={readOnly}
                       onStatusChange={handleStatusChange}
                     />
                   ) : (

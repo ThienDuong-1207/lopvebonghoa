@@ -7,7 +7,7 @@ import AttendanceChart from '@/components/admin/AttendanceChart'
 import Topbar from '@/components/admin/Topbar'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Users, UserCheck, TriangleAlert, Banknote, ArrowRight, Clock } from 'lucide-react'
+import { Users, UserCheck, TriangleAlert, Banknote, ArrowRight, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import type { Class, Alert } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
 
@@ -43,6 +43,10 @@ export default async function AdminDashboard() {
   sixMonthsAgo.setMonth(today.getMonth() - 5)
   sixMonthsAgo.setDate(1)
 
+  const fourteenDaysAgo = new Date(today)
+  fourteenDaysAgo.setDate(today.getDate() - 13)
+  const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0]
+
   const [
     { count: activeStudents },
     { count: todayCheckins },
@@ -53,6 +57,7 @@ export default async function AdminDashboard() {
     { data: monthPayments },
     { data: allPayments },
     { data: weekSessions },
+    { data: attendanceLog },
   ] = await Promise.all([
     supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('session_date', todayStr),
@@ -63,6 +68,10 @@ export default async function AdminDashboard() {
     supabase.from('packages').select('amount_paid').gte('paid_at', monthStart),
     supabase.from('packages').select('amount_paid, paid_at').gte('paid_at', sixMonthsAgo.toISOString().split('T')[0]),
     supabase.from('sessions').select('session_date, status').gte('session_date', weekStartStr),
+    supabase.from('sessions')
+      .select('session_date, class_id, checked_in_by, profiles!checked_in_by(full_name)')
+      .gte('session_date', fourteenDaysAgoStr)
+      .lte('session_date', todayStr),
   ])
 
   const monthRevenue = (monthPayments ?? []).reduce((s: number, p: { amount_paid: number }) => s + p.amount_paid, 0)
@@ -87,6 +96,35 @@ export default async function AdminDashboard() {
   })
 
   const todayClasses = (classes ?? []).filter((c: Class) => c.days_of_week.includes(todayDow))
+
+  // Tính lịch sử điểm danh 14 ngày
+  type LogRow = { session_date: string; class_id: string; profiles: { full_name: string }[] | null }
+  const staffByDateClass = new Map<string, Set<string>>()
+  for (const s of (attendanceLog ?? []) as unknown as LogRow[]) {
+    const key = `${s.session_date}__${s.class_id}`
+    if (!staffByDateClass.has(key)) staffByDateClass.set(key, new Set())
+    const name = Array.isArray(s.profiles) ? s.profiles[0]?.full_name : (s.profiles as { full_name: string } | null)?.full_name
+    if (name) staffByDateClass.get(key)!.add(name)
+  }
+
+  type HistoryRow = { date: string; dow: number; classId: string; className: string; attended: boolean; staffNames: string[] }
+  const attendanceHistory: HistoryRow[] = []
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    const [y, mo, dy] = [d.getFullYear(), d.getMonth(), d.getDate()]
+    const dateStr = `${y}-${String(mo + 1).padStart(2, '0')}-${String(dy).padStart(2, '0')}`
+    const dow = new Date(y, mo, dy).getDay()
+    for (const cls of (classes ?? []) as Class[]) {
+      if (!cls.days_of_week.includes(dow)) continue
+      const key = `${dateStr}__${cls.id}`
+      attendanceHistory.push({
+        date: dateStr, dow, classId: cls.id, className: cls.name,
+        attended: staffByDateClass.has(key),
+        staffNames: staffByDateClass.has(key) ? Array.from(staffByDateClass.get(key)!) : [],
+      })
+    }
+  }
 
   return (
     <>
@@ -254,6 +292,86 @@ export default async function AdminDashboard() {
             )}
           </div>
         </div>
+
+        {/* Row 4 — Lịch sử điểm danh giảng viên */}
+        {attendanceHistory.length > 0 && (
+          <div className="mt-5 rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-100">Kiểm soát điểm danh</h3>
+                <p className="mt-0.5 text-xs text-gray-400">14 ngày gần nhất — buổi học có lớp</p>
+              </div>
+              <Link
+                href="/admin/diem-danh"
+                className="text-xs font-medium text-[#C9A84C] hover:underline"
+              >
+                Điểm danh bù →
+              </Link>
+            </div>
+
+            <div className="space-y-1.5">
+              {attendanceHistory.map((row, idx) => {
+                const [, mo, dy] = row.date.split('-')
+                const dateLabel = `${dy}/${mo}`
+                return (
+                  <div
+                    key={`${row.date}-${row.classId}`}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                      row.attended
+                        ? 'bg-emerald-50 dark:bg-emerald-900/10'
+                        : 'bg-red-50 dark:bg-red-900/10'
+                    }`}
+                  >
+                    {/* Icon trạng thái */}
+                    {row.attended ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 shrink-0 text-red-400" />
+                    )}
+
+                    {/* Ngày + thứ */}
+                    <div className="w-28 shrink-0">
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {DAY_SHORT[row.dow]} {dateLabel}
+                      </span>
+                      {row.date === todayStr && (
+                        <span className="ml-1.5 rounded-full bg-[#0D2545] px-1.5 py-0.5 text-[9px] font-bold text-white">
+                          HÔM NAY
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Tên lớp */}
+                    <span className="w-32 shrink-0 truncate text-xs text-gray-500 dark:text-gray-400">
+                      {row.className}
+                    </span>
+
+                    {/* Giảng viên / trạng thái */}
+                    <div className="flex-1">
+                      {row.attended ? (
+                        <span className="text-xs text-emerald-700 dark:text-emerald-400">
+                          {row.staffNames.join(', ')}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-red-500">Chưa điểm danh</span>
+                      )}
+                    </div>
+
+                    {/* Link điểm bù nếu chưa điểm */}
+                    {!row.attended && (
+                      <Link
+                        href={`/admin/diem-danh?date=${row.date}&class_id=${row.classId}`}
+                        className="shrink-0 rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
+                      >
+                        Điểm bù
+                      </Link>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
