@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Check, X, RotateCcw } from 'lucide-react'
@@ -37,6 +38,12 @@ export default function AdminCheckinButton({
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(initialSessionId)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
+
+  function handleConflict() {
+    toast.error('Dữ liệu vừa bị người khác thay đổi. Đang tải lại...')
+    router.refresh()
+  }
 
   async function handleCheckin(newStatus: 'present' | 'absent' | 'makeup') {
     if (loading) return
@@ -44,19 +51,31 @@ export default function AdminCheckinButton({
     const prev = status
     try {
       if (status === newStatus && currentSessionId) {
-        const { error } = await supabase.from('sessions').delete().eq('id', currentSessionId)
+        // Optimistic lock: chỉ xoá nếu status trong DB vẫn đúng như UI đang thấy
+        const { data, error } = await supabase
+          .from('sessions')
+          .delete()
+          .eq('id', currentSessionId)
+          .eq('status', prev)
+          .select('id')
         if (error) throw error
+        if (!data || data.length === 0) { handleConflict(); return }
         setStatus(null)
         setCurrentSessionId(undefined)
         onCountChange?.(-countable(prev))
         onStatusChange?.(prev, null)
         toast('Đã xóa điểm danh', { icon: '↩' })
       } else if (currentSessionId) {
-        const { error } = await supabase
+        // Optimistic lock: chỉ ghi đè nếu status trong DB vẫn đúng như UI đang thấy
+        // (chặn trường hợp giáo viên/admin khác vừa đổi status session này)
+        const { data, error } = await supabase
           .from('sessions')
-          .update({ status: newStatus })
+          .update({ status: newStatus, checked_in_by: profileId })
           .eq('id', currentSessionId)
+          .eq('status', prev)
+          .select('id')
         if (error) throw error
+        if (!data || data.length === 0) { handleConflict(); return }
         setStatus(newStatus)
         onCountChange?.(countable(newStatus) - countable(prev))
         onStatusChange?.(prev, newStatus)
@@ -83,8 +102,9 @@ export default function AdminCheckinButton({
       }
     } catch {
       toast.error('Có lỗi xảy ra, thử lại.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const base = 'flex h-9 w-9 items-center justify-center rounded-full transition-all disabled:opacity-50'

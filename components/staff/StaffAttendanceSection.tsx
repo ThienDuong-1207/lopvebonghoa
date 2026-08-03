@@ -55,7 +55,11 @@ export default function StaffAttendanceSection({
     setAbsentCount((c) => c + absentDelta)
   }
 
-  const classesInfo = classesForDay.map((c) => ({ id: c.id, name: c.name }))
+  // RLS chỉ cho staff ghi session của lớp được gán (staff_own_class) —
+  // chỉ đưa lớp được gán vào ô tìm học bù để tránh insert bị RLS chặn
+  const classesInfo = classesForDay
+    .filter((c) => assignedSet.has(c.id))
+    .map((c) => ({ id: c.id, name: c.name }))
 
   return (
     <>
@@ -80,17 +84,25 @@ export default function StaffAttendanceSection({
         </div>
       )}
 
-      <StaffMakeupSearchBox
-        classesForDay={classesInfo}
-        sessionDate={selectedDateStr}
-        profileId={profileId}
-        onStatsChange={handleMakeupStatsChange}
-      />
+      {!readOnly && classesInfo.length > 0 && (
+        <StaffMakeupSearchBox
+          classesForDay={classesInfo}
+          sessionDate={selectedDateStr}
+          profileId={profileId}
+          onStatsChange={handleMakeupStatsChange}
+        />
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {classesForDay.map((cls, clsIdx) => {
           const clsStudents = students.filter((s) => s.class_id === cls.id)
           if (clsStudents.length === 0) return null
+
+          // RLS (staff_own_class) chỉ cho staff ghi session của lớp được
+          // gán — khoá nút bấm ở lớp khác để tránh thao tác tưởng thành
+          // công nhưng thực ra bị chặn ngầm.
+          const isAssigned = assignedSet.has(cls.id)
+          const clsReadOnly = readOnly || !isAssigned
 
           return (
             <div key={cls.id}>
@@ -102,9 +114,13 @@ export default function StaffAttendanceSection({
                   <span className="text-xs text-gray-400">
                     {formatTime(cls.time_start)}–{formatTime(cls.time_end)}
                   </span>
-                  {assignedSet.has(cls.id) && (
+                  {isAssigned ? (
                     <span className="rounded-full bg-[#0D2545] px-1.5 py-0.5 text-[10px] font-semibold text-white">
                       Lớp của bạn
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-400">
+                      Chỉ xem
                     </span>
                   )}
                 </div>
@@ -124,7 +140,7 @@ export default function StaffAttendanceSection({
                       classId={cls.id}
                       sessionDate={selectedDateStr}
                       profileId={profileId}
-                      readOnly={readOnly}
+                      readOnly={clsReadOnly}
                       onStatusChange={handleStatusChange}
                     />
                   ) : (

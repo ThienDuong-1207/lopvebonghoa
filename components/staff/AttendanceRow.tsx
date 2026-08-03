@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Check, X } from 'lucide-react'
@@ -31,6 +32,7 @@ export default function AttendanceRow({ student, pkg, session, classId, sessionD
   const [usedSessions, setUsedSessions] = useState(pkg.used_sessions)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
 
   async function select(next: 'present' | 'absent') {
     if (loading || status === next) return
@@ -38,8 +40,21 @@ export default function AttendanceRow({ student, pkg, session, classId, sessionD
     const prev = status
     try {
       if (sessionId) {
-        const { error } = await supabase.from('sessions').update({ status: next, checked_in_by: profileId }).eq('id', sessionId)
+        // Optimistic lock: chỉ ghi đè nếu status trong DB vẫn đúng như UI
+        // đang thấy — chặn trường hợp người khác (admin/giáo viên khác)
+        // vừa đổi status của session này trước đó.
+        const { data, error } = await supabase
+          .from('sessions')
+          .update({ status: next, checked_in_by: profileId })
+          .eq('id', sessionId)
+          .eq('status', prev)
+          .select('id')
         if (error) throw error
+        if (!data || data.length === 0) {
+          toast.error('Dữ liệu vừa bị người khác thay đổi. Đang tải lại...')
+          router.refresh()
+          return
+        }
       } else {
         const { data, error } = await supabase
           .from('sessions')
@@ -66,8 +81,9 @@ export default function AttendanceRow({ student, pkg, session, classId, sessionD
       else toast('Vắng', { icon: '✗' })
     } catch {
       toast.error('Có lỗi, thử lại.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const btnBase =
