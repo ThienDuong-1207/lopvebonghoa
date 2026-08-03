@@ -21,3 +21,15 @@ export const getProfile = cache(async () => {
     .single()
   return data
 })
+
+// ID các lớp mà 1 trợ giảng được phân công phụ trách (1 lớp có thể
+// có nhiều trợ giảng — xem bảng class_staff)
+export const getAssignedClassIds = cache(async (staffId: string) => {
+  if (!staffId) return []
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('class_staff')
+    .select('class_id')
+    .eq('staff_id', staffId)
+  return (data ?? []).map((r) => r.class_id)
+})

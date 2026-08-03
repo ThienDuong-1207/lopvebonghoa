@@ -20,14 +20,21 @@ async function updateClass(id: string, formData: FormData) {
   const days = formData.getAll('days_of_week').map(Number)
   if (days.length === 0) redirect(`/admin/lich-hoc/${id}?error=no_days`)
 
+  const staffIds = formData.getAll('assigned_staff_ids') as string[]
+
   await supabase.from('classes').update({
-    name:              (formData.get('name') as string).trim(),
-    days_of_week:      days,
-    time_start:        formData.get('time_start') as string,
-    time_end:          formData.get('time_end') as string,
-    max_capacity:      Number(formData.get('max_capacity')),
-    assigned_staff_id: (formData.get('assigned_staff_id') as string) || null,
+    name:         (formData.get('name') as string).trim(),
+    days_of_week: days,
+    time_start:   formData.get('time_start') as string,
+    time_end:     formData.get('time_end') as string,
+    max_capacity: Number(formData.get('max_capacity')),
   }).eq('id', id)
+
+  // Ghi lại toàn bộ danh sách trợ giảng phụ trách lớp này
+  await supabase.from('class_staff').delete().eq('class_id', id)
+  if (staffIds.length > 0) {
+    await supabase.from('class_staff').insert(staffIds.map((staff_id) => ({ class_id: id, staff_id })))
+  }
 
   redirect('/admin/lich-hoc')
 }
@@ -35,12 +42,15 @@ async function updateClass(id: string, formData: FormData) {
 export default async function EditClassPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
 
-  const [{ data: cls }, { data: staffList }] = await Promise.all([
+  const [{ data: cls }, { data: staffList }, { data: assignedRows }] = await Promise.all([
     supabase.from('classes').select('*').eq('id', params.id).single(),
     supabase.from('profiles').select('id, full_name').eq('role', 'staff').eq('is_active', true),
+    supabase.from('class_staff').select('staff_id').eq('class_id', params.id),
   ])
 
   if (!cls) notFound()
+
+  const assignedStaffIds = new Set((assignedRows ?? []).map((r) => r.staff_id))
 
   const boundUpdate = updateClass.bind(null, params.id)
 
@@ -94,17 +104,26 @@ export default async function EditClassPage({ params }: { params: { id: string }
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Trợ giảng phụ trách</label>
-              <select
-                name="assigned_staff_id"
-                defaultValue={cls.assigned_staff_id ?? ''}
-                className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
-              >
-                <option value="">Chưa phân công</option>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Trợ giảng phụ trách <span className="font-normal text-gray-400 text-xs">(chọn 0, 1 hoặc nhiều)</span>
+              </label>
+              <div className="space-y-1">
+                {(staffList ?? []).length === 0 && (
+                  <p className="text-xs text-gray-400">Chưa có trợ giảng nào.</p>
+                )}
                 {(staffList ?? []).map((s: Pick<Profile, 'id' | 'full_name'>) => (
-                  <option key={s.id} value={s.id}>{s.full_name}</option>
+                  <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm has-[:checked]:border-[#0D2545] has-[:checked]:bg-[#0D2545]/5 dark:border-gray-600 dark:has-[:checked]:border-[#C9A84C] dark:has-[:checked]:bg-[#C9A84C]/10">
+                    <input
+                      type="checkbox"
+                      name="assigned_staff_ids"
+                      value={s.id}
+                      defaultChecked={assignedStaffIds.has(s.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-[#0D2545] focus:ring-[#0D2545]"
+                    />
+                    <span className="text-gray-700 dark:text-gray-200">{s.full_name}</span>
+                  </label>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-2">

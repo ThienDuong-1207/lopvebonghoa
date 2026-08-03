@@ -40,12 +40,19 @@ interface Props {
 export default function ClassCreateForm({ action, staffList }: Props) {
   const [error, formAction] = useFormState(action, null)
   const [selectedDays, setSelectedDays] = useState<number[]>([])
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([])
   const [timeStart, setTimeStart] = useState('17:00')
   const [timeEnd, setTimeEnd] = useState('19:00')
 
   function toggleDay(dow: number) {
     setSelectedDays(prev =>
       prev.includes(dow) ? prev.filter(d => d !== dow) : [...prev, dow]
+    )
+  }
+
+  function toggleStaff(id: string) {
+    setSelectedStaffIds(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     )
   }
 
@@ -153,16 +160,28 @@ export default function ClassCreateForm({ action, staffList }: Props) {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Trợ giảng phụ trách</label>
-        <select
-          name="assigned_staff_id"
-          className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200"
-        >
-          <option value="">Chưa phân công</option>
+        <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+          Trợ giảng phụ trách <span className="font-normal text-gray-400">(chọn 0, 1 hoặc nhiều)</span>
+        </label>
+        <div className="space-y-1">
+          {staffList.length === 0 && (
+            <p className="text-xs text-gray-400">Chưa có trợ giảng nào.</p>
+          )}
           {staffList.map(s => (
-            <option key={s.id} value={s.id}>{s.full_name}</option>
+            <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm has-[:checked]:border-[#0D2545] has-[:checked]:bg-[#0D2545]/5 dark:border-gray-600 dark:has-[:checked]:border-[#C9A84C] dark:has-[:checked]:bg-[#C9A84C]/10">
+              <input
+                type="checkbox"
+                checked={selectedStaffIds.includes(s.id)}
+                onChange={() => toggleStaff(s.id)}
+                className="h-4 w-4 rounded border-gray-300 text-[#0D2545] focus:ring-[#0D2545]"
+              />
+              <span className="text-gray-700 dark:text-gray-200">{s.full_name}</span>
+            </label>
           ))}
-        </select>
+        </div>
+        {selectedStaffIds.map(id => (
+          <input key={id} type="hidden" name="assigned_staff_ids" value={id} />
+        ))}
       </div>
 
       <SubmitButton />

@@ -47,17 +47,22 @@ interface Props { searchParams: { error?: string; ok?: string } }
 export default async function StaffManagePage({ searchParams }: Props) {
   const supabase = createClient()
 
-  const [{ data: staffList }, { data: classes }] = await Promise.all([
+  const [{ data: staffList }, { data: assignments }] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
       .eq('role', 'staff')
       .order('full_name'),
-    supabase.from('classes').select('id, name, days_of_week, assigned_staff_id').eq('is_active', true),
+    supabase
+      .from('class_staff')
+      .select('staff_id, classes(id, name, days_of_week, is_active)'),
   ])
 
-  function getStaffClasses(staffId: string) {
-    return (classes ?? []).filter((c: Pick<Class, 'id' | 'name' | 'days_of_week' | 'assigned_staff_id'>) => c.assigned_staff_id === staffId)
+  type ClassRow = Pick<Class, 'id' | 'name' | 'days_of_week' | 'is_active'>
+  function getStaffClasses(staffId: string): ClassRow[] {
+    return (assignments ?? [])
+      .filter((a) => a.staff_id === staffId && a.classes && (a.classes as unknown as ClassRow).is_active)
+      .map((a) => a.classes as unknown as ClassRow)
   }
 
   return (

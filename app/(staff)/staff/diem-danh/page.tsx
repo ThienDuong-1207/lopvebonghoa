@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
-import { getProfile } from '@/lib/supabase/queries'
+import { getProfile, getAssignedClassIds } from '@/lib/supabase/queries'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import StaffAttendanceSection from '@/components/staff/StaffAttendanceSection'
@@ -43,9 +43,7 @@ export default async function DiemDanhPage({ searchParams }: Props) {
   const allClasses: Class[] = rawClasses ?? []
   const daysWithClass = new Set(allClasses.flatMap((c) => c.days_of_week))
   const classesForDay = allClasses.filter((c) => c.days_of_week.includes(selectedDow))
-  const assignedIds = new Set(
-    allClasses.filter((c) => c.assigned_staff_id === profile?.id).map((c) => c.id)
-  )
+  const assignedIds = new Set(await getAssignedClassIds(profile?.id ?? ''))
 
   // Lấy tất cả học sinh của các lớp hôm đó
   let students: Student[] = []

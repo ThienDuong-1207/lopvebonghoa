@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
-import { getProfile } from '@/lib/supabase/queries'
+import { getProfile, getAssignedClassIds } from '@/lib/supabase/queries'
 import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import type { Class, Student, Package } from '@/lib/types/database'
@@ -31,9 +31,7 @@ export default async function LichCaPage({ searchParams }: Props) {
     .order('name')
 
   // ID các lớp được phân công cho staff này (để đánh dấu)
-  const assignedIds = new Set(
-    (classes ?? []).filter((c: Class) => c.assigned_staff_id === profile?.id).map((c: Class) => c.id)
-  )
+  const assignedIds = new Set(await getAssignedClassIds(profile?.id ?? ''))
 
   // Lớp hiển thị: lọc theo ngày được chọn
   const visibleClasses = (classes ?? []).filter((c: Class) =>

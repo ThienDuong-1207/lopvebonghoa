@@ -38,9 +38,14 @@ export interface Class {
   time_start: string
   time_end: string
   max_capacity: number
-  assigned_staff_id: string | null
   is_active: boolean
   created_at: string
+}
+
+// Bảng trung gian: 1 lớp có thể có nhiều trợ giảng phụ trách
+export interface ClassStaff {
+  class_id: string
+  staff_id: string
 }
 
 export interface Student {

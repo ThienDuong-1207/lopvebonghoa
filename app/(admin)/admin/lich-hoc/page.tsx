@@ -22,17 +22,23 @@ async function createClass(_prev: string | null, formData: FormData): Promise<st
   const days = formData.getAll('days_of_week').map(Number)
   if (days.length === 0) return 'Vui lòng chọn ít nhất một ngày học.'
 
-  const { error } = await supabase.from('classes').insert({
+  const staffIds = formData.getAll('assigned_staff_ids') as string[]
+
+  const { data: cls, error } = await supabase.from('classes').insert({
     name,
-    days_of_week:      days,
-    time_start:        formData.get('time_start') as string,
-    time_end:          formData.get('time_end') as string,
-    max_capacity:      Number(formData.get('max_capacity')),
-    assigned_staff_id: (formData.get('assigned_staff_id') as string) || null,
-    is_active:         true,
-  })
+    days_of_week: days,
+    time_start:   formData.get('time_start') as string,
+    time_end:     formData.get('time_end') as string,
+    max_capacity: Number(formData.get('max_capacity')),
+    is_active:    true,
+  }).select('id').single()
 
   if (error) return `Không thể tạo lớp: ${error.message}`
+
+  if (staffIds.length > 0) {
+    await supabase.from('class_staff').insert(staffIds.map((staff_id) => ({ class_id: cls.id, staff_id })))
+  }
+
   redirect('/admin/lich-hoc')
 }
 
@@ -54,7 +60,7 @@ export default async function LichHocPage() {
   const supabase = createClient()
 
   const [{ data: classes }, { data: staffList }, { data: studentRows }] = await Promise.all([
-    supabase.from('classes').select('*, profiles(full_name)').order('time_start').order('name'),
+    supabase.from('classes').select('*, class_staff(profiles(full_name))').order('time_start').order('name'),
     supabase.from('profiles').select('id, full_name').eq('role', 'staff').eq('is_active', true),
     supabase.from('students').select('class_id').eq('status', 'active').not('class_id', 'is', null),
   ])
@@ -99,7 +105,7 @@ export default async function LichHocPage() {
                 Chưa có lớp học nào — tạo lớp đầu tiên →
               </div>
             )}
-            {(classes ?? []).map((cls: Class & { profiles: { full_name: string } | null }) => {
+            {(classes ?? []).map((cls: Class & { class_staff: { profiles: { full_name: string } | null }[] }) => {
               const enrolled = countByClass[cls.id] ?? 0
               const isFull = enrolled >= cls.max_capacity
               return (
@@ -137,10 +143,10 @@ export default async function LichHocPage() {
                         </span>
                         <span>học sinh</span>
                       </span>
-                      {cls.profiles && (
+                      {cls.class_staff.length > 0 && (
                         <span className="flex items-center gap-1">
                           <UserRound className="h-3 w-3" />
-                          {cls.profiles.full_name}
+                          {cls.class_staff.map((cs) => cs.profiles?.full_name).filter(Boolean).join(', ')}
                         </span>
                       )}
                     </div>

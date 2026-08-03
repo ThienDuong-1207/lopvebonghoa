@@ -16,8 +16,8 @@ export default async function StaffHomePage() {
 
   const { data: classes } = await supabase
     .from('classes')
-    .select('*')
-    .eq('assigned_staff_id', profile?.id ?? '')
+    .select('*, class_staff!inner(staff_id)')
+    .eq('class_staff.staff_id', profile?.id ?? '')
     .eq('is_active', true)
     .order('time_start')
 
