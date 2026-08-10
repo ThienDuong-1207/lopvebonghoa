@@ -66,12 +66,16 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   const oldPackages    = (packages ?? []).filter((p: Package) => p.status !== 'active')
   const packageCount   = (packages ?? []).length
   const sessionCount   = (packages ?? []).reduce((n, p) => n + ((p as Package & { sessions: Session[] }).sessions?.length ?? 0), 0)
-  const allSessions    = (packages ?? [])
-    .flatMap((p) => {
-      const pkg = p as Package & { sessions: Session[] }
-      return (pkg.sessions ?? []).map((s) => ({ ...s, package_start_date: pkg.start_date, package_status: pkg.status }))
-    })
-    .sort((a, b) => b.session_date.localeCompare(a.session_date))
+  // Gom buổi học theo từng gói (gói mới nhất trước) để "Lịch sử buổi học"
+  // hiện rõ ranh giới giữa các gói thay vì 1 danh sách phẳng lẫn lộn.
+  const packageGroups = (packages ?? [])
+    .map((p) => p as Package & { sessions: Session[] })
+    .filter((p) => (p.sessions?.length ?? 0) > 0)
+    .sort((a, b) => b.start_date.localeCompare(a.start_date))
+    .map((p) => ({
+      pkg: p,
+      sessions: [...(p.sessions ?? [])].sort((a, b) => b.session_date.localeCompare(a.session_date)),
+    }))
 
   const displayName = student.full_name
     .split(' ')
@@ -80,6 +84,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   const progressPct = activePackage
     ? Math.round((activePackage.used_sessions / activePackage.total_sessions) * 100)
+    : 0
+  const remaining = activePackage
+    ? activePackage.total_sessions - activePackage.used_sessions
     : 0
 
   return (
@@ -176,9 +183,29 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
           {/* ── Card 2: Gói học hiện tại ── */}
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
-              <Wallet className="h-4 w-4 text-[#C9A84C]" />
-              <h2 className="font-semibold text-gray-800 dark:text-gray-100">Gói học hiện tại</h2>
+            <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-[#C9A84C]" />
+                <h2 className="font-semibold text-gray-800 dark:text-gray-100">Gói học hiện tại</h2>
+              </div>
+              {activePackage && (
+                <div className="flex items-center gap-1.5">
+                  {activePackage.payment_status === 'pending' && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                      Chờ thu
+                    </span>
+                  )}
+                  {remaining <= 0 ? (
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/40 dark:text-red-400">
+                      Đã hết gói
+                    </span>
+                  ) : remaining <= 2 ? (
+                    <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">
+                      Sắp hết gói
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
 
             <div className="p-5">
@@ -186,7 +213,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                 <>
                   {/* Progress — số lớn ở trung tâm */}
                   <div className="mb-5 text-center">
-                    <div className="text-5xl font-bold tabular-nums text-[#0D2545] dark:text-[#C9A84C]">
+                    <div className={`text-5xl font-bold tabular-nums ${remaining <= 2 ? 'text-orange-500' : 'text-[#0D2545] dark:text-[#C9A84C]'}`}>
                       {activePackage.used_sessions}
                       <span className="text-2xl font-normal text-gray-300 dark:text-gray-600">
                         /{activePackage.total_sessions}
@@ -198,7 +225,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                   {/* Progress bar */}
                   <div className="mb-1 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                     <div
-                      className="h-full rounded-full bg-[#C9A84C] transition-all duration-500"
+                      className={`h-full rounded-full transition-all duration-500 ${remaining <= 0 ? 'bg-red-500' : remaining <= 2 ? 'bg-orange-500' : 'bg-[#C9A84C]'}`}
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
@@ -210,8 +237,8 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                     </InfoRow>
                     <InfoRow label="Ngày đóng">{activePackage.paid_at ? formatDate(activePackage.paid_at) : '—'}</InfoRow>
                     <InfoRow label="Còn lại">
-                      <span className={activePackage.total_sessions - activePackage.used_sessions <= 2 ? 'font-semibold text-red-500' : ''}>
-                        {activePackage.total_sessions - activePackage.used_sessions} buổi
+                      <span className={remaining <= 0 ? 'font-semibold text-red-500' : remaining <= 2 ? 'font-semibold text-orange-500' : ''}>
+                        {remaining} buổi
                       </span>
                     </InfoRow>
                   </dl>
@@ -260,31 +287,54 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             </div>
 
             <div className="p-5">
-              {allSessions.length > 0 ? (
-                <div className="max-h-80 space-y-1.5 overflow-y-auto">
-                  {allSessions.map((s: Session & { package_start_date: string; package_status: string }) => {
-                      const d = new Date(s.session_date)
-                      const dow = DAY_SHORT[d.getDay()]
-                      return (
+              {packageGroups.length > 0 ? (
+                <div className="max-h-[28rem] space-y-3 overflow-y-auto">
+                  {packageGroups.map(({ pkg, sessions }) => {
+                    const isActive = pkg.status === 'active'
+                    return (
+                      <div
+                        key={pkg.id}
+                        className={`overflow-hidden rounded-xl border-l-4 ${
+                          isActive ? 'border-[#C9A84C]' : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
                         <div
-                          key={s.id}
-                          className="flex items-center justify-between rounded-xl px-3 py-2.5 odd:bg-gray-50 dark:odd:bg-gray-700/40"
+                          className={`flex items-center justify-between px-3 py-1.5 text-xs font-semibold ${
+                            isActive
+                              ? 'bg-[#C9A84C]/10 text-[#0D2545] dark:text-[#C9A84C]'
+                              : 'bg-gray-50 text-gray-500 dark:bg-gray-700/40 dark:text-gray-400'
+                          }`}
                         >
-                          <div className="text-sm">
-                            <span className="mr-2 rounded-md bg-[#0D2545]/8 px-1.5 py-0.5 text-xs font-medium text-[#0D2545] dark:bg-[#C9A84C]/15 dark:text-[#C9A84C]">
-                              {dow}
-                            </span>
-                            <span className="text-gray-600 dark:text-gray-300">{formatDate(s.session_date)}</span>
-                            <span className="ml-2 text-xs text-gray-400">
-                              · gói {formatDate(s.package_start_date)}{s.package_status !== 'active' && ` (${PACKAGE_STATUS_LABEL[s.package_status] ?? s.package_status})`}
-                            </span>
-                          </div>
-                          <Badge variant={s.status === 'present' ? 'default' : s.status === 'absent' ? 'destructive' : 'secondary'}>
-                            {SESSION_LABEL[s.status]}
-                          </Badge>
+                          <span>{isActive ? 'Gói hiện tại' : 'Gói cũ'} · bắt đầu {formatDate(pkg.start_date)}</span>
+                          {!isActive && (
+                            <span className="font-normal">{PACKAGE_STATUS_LABEL[pkg.status] ?? pkg.status}</span>
+                          )}
                         </div>
-                      )
-                    })}
+                        <div className="space-y-1 p-1.5">
+                          {sessions.map((s) => {
+                            const d = new Date(s.session_date)
+                            const dow = DAY_SHORT[d.getDay()]
+                            return (
+                              <div
+                                key={s.id}
+                                className="flex items-center justify-between rounded-lg px-2.5 py-2 odd:bg-gray-50 dark:odd:bg-gray-700/40"
+                              >
+                                <div className="text-sm">
+                                  <span className="mr-2 rounded-md bg-[#0D2545]/8 px-1.5 py-0.5 text-xs font-medium text-[#0D2545] dark:bg-[#C9A84C]/15 dark:text-[#C9A84C]">
+                                    {dow}
+                                  </span>
+                                  <span className="text-gray-600 dark:text-gray-300">{formatDate(s.session_date)}</span>
+                                </div>
+                                <Badge variant={s.status === 'present' ? 'default' : s.status === 'absent' ? 'destructive' : 'secondary'}>
+                                  {SESSION_LABEL[s.status]}
+                                </Badge>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
