@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, Check, X, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -50,6 +51,7 @@ export default function StaffMakeupSearchBox({
   const [showDrop, setShowDrop] = useState(false)
   const [added, setAdded] = useState<MakeupEntry[]>([])
   const supabase = createClient()
+  const router = useRouter()
   const timer = useRef<ReturnType<typeof setTimeout>>()
   const boxRef = useRef<HTMLDivElement>(null)
   const addedRef = useRef<MakeupEntry[]>([])
@@ -191,8 +193,21 @@ export default function StaffMakeupSearchBox({
     try {
       let newSessionId = entry.sessionId
       if (entry.sessionId) {
-        const { error } = await supabase.from('sessions').update({ status: next }).eq('id', entry.sessionId)
+        // Optimistic lock: chỉ ghi đè nếu status trong DB vẫn đúng như UI
+        // đang thấy — chặn trường hợp người khác vừa đổi status session này.
+        const { data, error } = await supabase
+          .from('sessions')
+          .update({ status: next })
+          .eq('id', entry.sessionId)
+          .eq('status', prevStatus)
+          .select('id')
         if (error) throw error
+        if (!data || data.length === 0) {
+          setAdded((entries) => entries.map((a) => (a.id === id ? { ...a, loading: false } : a)))
+          toast.error('Dữ liệu vừa bị người khác thay đổi. Đang tải lại...')
+          router.refresh()
+          return
+        }
       } else {
         const { data, error } = await supabase
           .from('sessions')
