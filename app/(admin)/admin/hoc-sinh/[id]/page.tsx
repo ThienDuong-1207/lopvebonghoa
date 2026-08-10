@@ -235,6 +235,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                     <InfoRow label="Học phí">
                       <span className="font-semibold">{activePackage.amount_paid.toLocaleString('vi-VN')}đ</span>
                     </InfoRow>
+                    <InfoRow label="Ngày học">{formatDate(activePackage.start_date)}</InfoRow>
                     <InfoRow label="Ngày đóng">{activePackage.paid_at ? formatDate(activePackage.paid_at) : '—'}</InfoRow>
                     <InfoRow label="Còn lại">
                       <span className={remaining <= 0 ? 'font-semibold text-red-500' : remaining <= 2 ? 'font-semibold text-orange-500' : ''}>
@@ -254,10 +255,14 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                       <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">Gói cũ</p>
                       <div className="space-y-2">
                         {oldPackages.map((p: Package) => (
-                          <div key={p.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-700">
-                            <span className="text-gray-400">{p.paid_at ? formatDate(p.paid_at) : '—'}</span>
-                            <span className="text-gray-500">{p.used_sessions}/{p.total_sessions} buổi</span>
-                            <span className="font-medium text-gray-600 dark:text-gray-300">{p.amount_paid.toLocaleString('vi-VN')}đ</span>
+                          <div key={p.id} className="rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-700">
+                            <div className="text-gray-400">
+                              Học {formatDate(p.start_date)} · Đóng {p.paid_at ? formatDate(p.paid_at) : '—'}
+                            </div>
+                            <div className="mt-1 flex items-center justify-between">
+                              <span className="text-gray-500">{p.used_sessions}/{p.total_sessions} buổi</span>
+                              <span className="font-medium text-gray-600 dark:text-gray-300">{p.amount_paid.toLocaleString('vi-VN')}đ</span>
+                            </div>
                           </div>
                         ))}
                       </div>
