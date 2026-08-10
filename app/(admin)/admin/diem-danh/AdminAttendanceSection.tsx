@@ -4,6 +4,7 @@ import { useState } from 'react'
 import AdminAttendanceRow from './AdminAttendanceRow'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { formatDays } from '@/lib/types/database'
+import { formatDate } from '@/lib/utils/formatters'
 
 type FullStatus = 'present' | 'absent' | 'makeup' | null
 
@@ -54,7 +55,7 @@ export default function AdminAttendanceSection({
         <div>
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">{selectedClass.name}</h2>
           <p className="text-xs text-gray-400">
-            {selectedDate} · {formatDays(selectedClass.days_of_week)} · {formatTime(selectedClass.time_start)}–{formatTime(selectedClass.time_end)}
+            {formatDate(selectedDate)} · {formatDays(selectedClass.days_of_week)} · {formatTime(selectedClass.time_start)}–{formatTime(selectedClass.time_end)}
           </p>
         </div>
         <div className="flex gap-5 text-center">

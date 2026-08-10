@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle } from 'lucide-react'
 import type { Student, Package } from '@/lib/types/database'
+import { formatDate } from '@/lib/utils/formatters'
 import MarkPaidButton from './MarkPaidButton'
 import DeletePackageButton from './DeletePackageButton'
 
@@ -225,7 +226,7 @@ export default async function ThanhToanPage({ searchParams }: Props) {
                       <div className="text-sm text-gray-500">
                         {p.payment_status === 'pending'
                           ? <span className="font-medium text-amber-600 dark:text-amber-400">Chưa thu tiền · {p.total_sessions} buổi</span>
-                          : <>{p.amount_paid.toLocaleString('vi-VN')}đ · {p.paid_at} · {p.total_sessions} buổi</>
+                          : <>{p.amount_paid.toLocaleString('vi-VN')}đ · {formatDate(p.paid_at!)} · {p.total_sessions} buổi</>
                         }
                       </div>
                       {p.note && <div className="text-xs text-gray-400">{p.note}</div>}

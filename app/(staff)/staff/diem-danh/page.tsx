@@ -7,6 +7,7 @@ import { ChevronLeft } from 'lucide-react'
 import StaffAttendanceSection from '@/components/staff/StaffAttendanceSection'
 import type { Class, Student, Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, DAY_FULL } from '@/lib/types/database'
+import { formatDate } from '@/lib/utils/formatters'
 
 interface Props {
   searchParams: { dow?: string; week?: string }
@@ -153,7 +154,7 @@ export default async function DiemDanhPage({ searchParams }: Props) {
             </span>
           )}
         </h2>
-        <p className="text-xs text-gray-400">{selectedDateStr}</p>
+        <p className="text-xs text-gray-400">{formatDate(selectedDateStr)}</p>
       </div>
 
       {/* ── Stat bar + danh sách học sinh (client component để cập nhật real-time) ── */}

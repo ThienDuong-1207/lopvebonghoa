@@ -6,6 +6,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle } from 'lucide-react'
+import { formatDate } from '@/lib/utils/formatters'
 
 const STATUS_LABEL: Record<string, string> = { present: 'Có mặt', makeup: 'Học bù' }
 
@@ -51,7 +52,7 @@ export default async function DoiSoatPage({ params }: { params: { id: string } }
           <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              Đã tạo gói mới cho <strong>{(pkg as unknown as { students: { full_name: string } }).students?.full_name}</strong> (bắt đầu {pkg.start_date}).
+              Đã tạo gói mới cho <strong>{(pkg as unknown as { students: { full_name: string } }).students?.full_name}</strong> (bắt đầu {formatDate(pkg.start_date)}).
               Hệ thống phát hiện <strong>{strayed?.length ?? 0} buổi</strong> đã điểm danh trong khoảng ngày này nhưng đang gắn gói khác — chọn buổi cần gán lại về gói mới.
             </div>
           </div>
@@ -79,10 +80,10 @@ export default async function DoiSoatPage({ params }: { params: { id: string } }
                       />
                       <div className="flex-1">
                         <div className="font-medium text-gray-800 dark:text-gray-100">
-                          {s.session_date} · {STATUS_LABEL[s.status] ?? s.status}
+                          {formatDate(s.session_date)} · {STATUS_LABEL[s.status] ?? s.status}
                         </div>
                         <div className="text-xs text-gray-400">
-                          Đang thuộc gói bắt đầu {oldPkg?.start_date ?? '—'} ({oldPkg?.status ?? '—'})
+                          Đang thuộc gói bắt đầu {oldPkg?.start_date ? formatDate(oldPkg.start_date) : '—'} ({oldPkg?.status ?? '—'})
                         </div>
                       </div>
                     </label>

@@ -6,6 +6,7 @@ import AlertRow from '@/components/admin/AlertRow'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { formatDate } from '@/lib/utils/formatters'
 
 type PkgLite = { id: string; student_id: string; start_date: string; status: string }
 type SessionLite = { id: string; session_date: string; status: string; student_id: string; package_id: string }
@@ -206,9 +207,9 @@ export default async function CanhBaoPage() {
                       <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-100">
                         {studentNameById.get(session.student_id) ?? '—'}
                       </td>
-                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">{session.session_date}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{oldPkg.start_date}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{newPkg.start_date}</td>
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">{formatDate(session.session_date)}</td>
+                      <td className="px-4 py-2.5 text-gray-400">{formatDate(oldPkg.start_date)}</td>
+                      <td className="px-4 py-2.5 text-gray-400">{formatDate(newPkg.start_date)}</td>
                       <td className="px-4 py-2.5">
                         <Link
                           href={`/admin/hoc-sinh/${session.student_id}`}

@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Pencil, CalendarDays, Wallet } from 'lucide-react'
 import type { Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, formatDays } from '@/lib/types/database'
+import { formatDate } from '@/lib/utils/formatters'
 import DeleteStudentButton from './DeleteStudentButton'
 
 const SESSION_LABEL: Record<string, string> = { present: 'Có mặt', absent: 'Vắng', makeup: 'Học bù' }
@@ -207,7 +208,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                     <InfoRow label="Học phí">
                       <span className="font-semibold">{activePackage.amount_paid.toLocaleString('vi-VN')}đ</span>
                     </InfoRow>
-                    <InfoRow label="Ngày đóng">{activePackage.paid_at}</InfoRow>
+                    <InfoRow label="Ngày đóng">{activePackage.paid_at ? formatDate(activePackage.paid_at) : '—'}</InfoRow>
                     <InfoRow label="Còn lại">
                       <span className={activePackage.total_sessions - activePackage.used_sessions <= 2 ? 'font-semibold text-red-500' : ''}>
                         {activePackage.total_sessions - activePackage.used_sessions} buổi
@@ -227,7 +228,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                       <div className="space-y-2">
                         {oldPackages.map((p: Package) => (
                           <div key={p.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-700">
-                            <span className="text-gray-400">{p.paid_at}</span>
+                            <span className="text-gray-400">{p.paid_at ? formatDate(p.paid_at) : '—'}</span>
                             <span className="text-gray-500">{p.used_sessions}/{p.total_sessions} buổi</span>
                             <span className="font-medium text-gray-600 dark:text-gray-300">{p.amount_paid.toLocaleString('vi-VN')}đ</span>
                           </div>
@@ -273,9 +274,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                             <span className="mr-2 rounded-md bg-[#0D2545]/8 px-1.5 py-0.5 text-xs font-medium text-[#0D2545] dark:bg-[#C9A84C]/15 dark:text-[#C9A84C]">
                               {dow}
                             </span>
-                            <span className="text-gray-600 dark:text-gray-300">{s.session_date}</span>
+                            <span className="text-gray-600 dark:text-gray-300">{formatDate(s.session_date)}</span>
                             <span className="ml-2 text-xs text-gray-400">
-                              · gói {s.package_start_date}{s.package_status !== 'active' && ` (${PACKAGE_STATUS_LABEL[s.package_status] ?? s.package_status})`}
+                              · gói {formatDate(s.package_start_date)}{s.package_status !== 'active' && ` (${PACKAGE_STATUS_LABEL[s.package_status] ?? s.package_status})`}
                             </span>
                           </div>
                           <Badge variant={s.status === 'present' ? 'default' : s.status === 'absent' ? 'destructive' : 'secondary'}>
