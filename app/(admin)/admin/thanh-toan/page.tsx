@@ -45,10 +45,12 @@ async function createPackage(formData: FormData) {
   const paidAtRaw = formData.get('paid_at') as string
   const startDateRaw = formData.get('start_date') as string
 
-  const { error } = await supabase.from('packages').insert({
+  const startDate = startDateRaw || new Date().toISOString().split('T')[0]
+
+  const { data: newPkg, error } = await supabase.from('packages').insert({
     student_id:      studentId,
     amount_paid:     isPending ? 0 : Number(amountRaw),
-    start_date:      startDateRaw || new Date().toISOString().split('T')[0],
+    start_date:      startDate,
     paid_at:         isPending ? null : (paidAtRaw || null),
     note:            (formData.get('note') as string) || null,
     total_sessions:  Number(formData.get('total_sessions') || 8),
@@ -56,7 +58,7 @@ async function createPackage(formData: FormData) {
     marked_paid_by:  isPending ? null : (adminProfile?.id ?? null),
     status:          'active',
     payment_status:  isPending ? 'pending' : 'paid',
-  })
+  }).select('id').single()
   if (error) redirect(`/admin/thanh-toan?error=db&msg=${encodeURIComponent(error.message)}`)
 
   // Auto-resolve near_end / package_ended alerts khi học sinh gia hạn
@@ -67,6 +69,22 @@ async function createPackage(formData: FormData) {
     .eq('student_id', studentId)
     .in('type', ['near_end', 'package_ended'])
     .eq('resolved', false)
+
+  // Đối soát: có buổi nào đã điểm danh (present/makeup) trong khoảng
+  // ngày của gói mới nhưng đang gắn gói khác không? (VD: bé học trước,
+  // gói mới nhập trễ). Nếu có, cho admin xác nhận gán lại thay vì để
+  // âm thầm lệch gói.
+  const { count } = await supabase
+    .from('sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+    .neq('package_id', newPkg!.id)
+    .gte('session_date', startDate)
+    .in('status', ['present', 'makeup'])
+
+  if (count && count > 0) {
+    redirect(`/admin/thanh-toan/doi-soat/${newPkg!.id}`)
+  }
 
   redirect('/admin/thanh-toan?success=1')
 }
@@ -157,8 +175,10 @@ export default async function ThanhToanPage({ searchParams }: Props) {
                   <Input name="total_sessions" type="number" required min={1} defaultValue={8} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày bắt đầu học</label>
-                  <Input name="start_date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Ngày bắt đầu học <span className="font-normal text-gray-400">(ngày bé thực học buổi đầu, không phải ngày đóng tiền)</span>
+                  </label>
+                  <Input name="start_date" type="date" required />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Ngày đóng tiền</label>

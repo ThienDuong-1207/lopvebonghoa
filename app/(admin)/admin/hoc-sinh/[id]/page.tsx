@@ -12,6 +12,7 @@ import DeleteStudentButton from './DeleteStudentButton'
 
 const SESSION_LABEL: Record<string, string> = { present: 'Có mặt', absent: 'Vắng', makeup: 'Học bù' }
 const STATUS_LABEL: Record<string, string> = { active: 'Đang học', paused: 'Tạm nghỉ', inactive: 'Nghỉ học' }
+const PACKAGE_STATUS_LABEL: Record<string, string> = { active: 'Đang học', completed: 'Hết gói', cancelled: 'Huỷ' }
 const STATUS_NEXT: Record<string, string[]> = {
   active:   ['paused', 'inactive'],
   paused:   ['active', 'inactive'],
@@ -65,7 +66,10 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   const packageCount   = (packages ?? []).length
   const sessionCount   = (packages ?? []).reduce((n, p) => n + ((p as Package & { sessions: Session[] }).sessions?.length ?? 0), 0)
   const allSessions    = (packages ?? [])
-    .flatMap((p) => (p as Package & { sessions: Session[] }).sessions ?? [])
+    .flatMap((p) => {
+      const pkg = p as Package & { sessions: Session[] }
+      return (pkg.sessions ?? []).map((s) => ({ ...s, package_start_date: pkg.start_date, package_status: pkg.status }))
+    })
     .sort((a, b) => b.session_date.localeCompare(a.session_date))
 
   const displayName = student.full_name
@@ -257,7 +261,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             <div className="p-5">
               {allSessions.length > 0 ? (
                 <div className="max-h-80 space-y-1.5 overflow-y-auto">
-                  {allSessions.map((s: Session) => {
+                  {allSessions.map((s: Session & { package_start_date: string; package_status: string }) => {
                       const d = new Date(s.session_date)
                       const dow = DAY_SHORT[d.getDay()]
                       return (
@@ -270,6 +274,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                               {dow}
                             </span>
                             <span className="text-gray-600 dark:text-gray-300">{s.session_date}</span>
+                            <span className="ml-2 text-xs text-gray-400">
+                              · gói {s.package_start_date}{s.package_status !== 'active' && ` (${PACKAGE_STATUS_LABEL[s.package_status] ?? s.package_status})`}
+                            </span>
                           </div>
                           <Badge variant={s.status === 'present' ? 'default' : s.status === 'absent' ? 'destructive' : 'secondary'}>
                             {SESSION_LABEL[s.status]}

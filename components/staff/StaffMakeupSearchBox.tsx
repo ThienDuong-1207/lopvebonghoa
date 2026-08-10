@@ -103,7 +103,7 @@ export default function StaffMakeupSearchBox({
           .from('packages')
           .select('id, student_id, used_sessions, total_sessions, payment_status, start_date')
           .in('student_id', ids)
-          .neq('status', 'cancelled')
+          .eq('status', 'active')
           .lte('start_date', sessionDate)
           .order('start_date', { ascending: false }),
         supabase

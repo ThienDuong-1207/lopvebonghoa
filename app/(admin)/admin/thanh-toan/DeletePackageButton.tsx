@@ -21,11 +21,9 @@ export default function DeletePackageButton({ packageId, studentId, studentName,
   const supabase = createClient()
 
   async function handleDelete() {
+    if (sessionCount > 0) return
     setLoading(true)
     try {
-      const { error: sessErr } = await supabase.from('sessions').delete().eq('package_id', packageId)
-      if (sessErr) throw sessErr
-
       await supabase.from('alerts').delete()
         .eq('student_id', studentId)
         .in('type', ['near_end', 'package_ended'])
@@ -55,35 +53,50 @@ export default function DeletePackageButton({ packageId, studentId, studentName,
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
               <Trash2 className="h-5 w-5 text-red-500" />
             </div>
-            <h3 className="mb-1 font-semibold text-gray-800 dark:text-gray-100">Xóa gói học?</h3>
-            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-              Gói của <strong>{studentName}</strong> sẽ bị xóa vĩnh viễn cùng với:
-            </p>
-            <ul className="mb-5 space-y-1.5 rounded-xl bg-red-50 px-4 py-3 dark:bg-red-900/20">
-              <li className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                <strong>{sessionCount}</strong> buổi điểm danh
-              </li>
-              {paymentStatus === 'paid' && amountPaid > 0 && (
-                <li className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                  Doanh thu <strong>{amountPaid.toLocaleString('vi-VN')}đ</strong>
-                </li>
-              )}
-              <li className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                Cảnh báo liên quan (nếu có)
-              </li>
-            </ul>
-            <p className="mb-5 text-xs text-gray-400">Hành động này không thể hoàn tác.</p>
-            <div className="flex gap-2">
-              <Btn variant="danger" className="flex-1" onClick={handleDelete} disabled={loading}>
-                {loading ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
-              </Btn>
-              <Btn variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={loading}>
-                Hủy
-              </Btn>
-            </div>
+            {sessionCount > 0 ? (
+              <>
+                <h3 className="mb-1 font-semibold text-gray-800 dark:text-gray-100">Không thể xóa gói này</h3>
+                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  Gói của <strong>{studentName}</strong> đang có{' '}
+                  <strong className="text-red-600 dark:text-red-400">{sessionCount} buổi điểm danh</strong> gắn vào.
+                  Xóa gói sẽ xóa vĩnh viễn luôn dữ liệu điểm danh thật của các buổi đó.
+                </p>
+                <p className="mb-5 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                  Nếu các buổi này thực ra thuộc gói khác (VD: điểm danh trước khi gói mới được tạo), hãy gán lại đúng gói cho từng buổi trước — không xóa gói để "dọn".
+                </p>
+                <Btn variant="outline" className="w-full" onClick={() => setOpen(false)}>
+                  Đã hiểu
+                </Btn>
+              </>
+            ) : (
+              <>
+                <h3 className="mb-1 font-semibold text-gray-800 dark:text-gray-100">Xóa gói học?</h3>
+                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  Gói của <strong>{studentName}</strong> (chưa có buổi điểm danh nào) sẽ bị xóa vĩnh viễn cùng với:
+                </p>
+                <ul className="mb-5 space-y-1.5 rounded-xl bg-red-50 px-4 py-3 dark:bg-red-900/20">
+                  {paymentStatus === 'paid' && amountPaid > 0 && (
+                    <li className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                      Doanh thu <strong>{amountPaid.toLocaleString('vi-VN')}đ</strong>
+                    </li>
+                  )}
+                  <li className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                    Cảnh báo liên quan (nếu có)
+                  </li>
+                </ul>
+                <p className="mb-5 text-xs text-gray-400">Hành động này không thể hoàn tác.</p>
+                <div className="flex gap-2">
+                  <Btn variant="danger" className="flex-1" onClick={handleDelete} disabled={loading}>
+                    {loading ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
+                  </Btn>
+                  <Btn variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={loading}>
+                    Hủy
+                  </Btn>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
