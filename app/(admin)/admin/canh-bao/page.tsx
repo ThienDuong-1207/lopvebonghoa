@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils/formatters'
+import ReassignSessionButton from '@/components/admin/ReassignSessionButton'
 
 type PkgLite = { id: string; student_id: string; start_date: string; status: string }
 type SessionLite = { id: string; session_date: string; status: string; student_id: string; package_id: string }
@@ -211,12 +212,15 @@ export default async function CanhBaoPage() {
                       <td className="px-4 py-2.5 text-gray-400">{formatDate(oldPkg.start_date)}</td>
                       <td className="px-4 py-2.5 text-gray-400">{formatDate(newPkg.start_date)}</td>
                       <td className="px-4 py-2.5">
-                        <Link
-                          href={`/admin/hoc-sinh/${session.student_id}`}
-                          className="text-xs text-[#0D2545] hover:underline dark:text-[#C9A84C]"
-                        >
-                          Xem →
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <ReassignSessionButton sessionId={session.id} newPackageId={newPkg.id} />
+                          <Link
+                            href={`/admin/hoc-sinh/${session.student_id}`}
+                            className="text-xs text-[#0D2545] hover:underline dark:text-[#C9A84C]"
+                          >
+                            Xem →
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

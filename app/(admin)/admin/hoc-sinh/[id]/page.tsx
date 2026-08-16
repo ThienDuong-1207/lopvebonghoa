@@ -10,6 +10,7 @@ import type { Package, Session } from '@/lib/types/database'
 import { DAY_SHORT, formatDays } from '@/lib/types/database'
 import { formatDate } from '@/lib/utils/formatters'
 import DeleteStudentButton from './DeleteStudentButton'
+import EditSessionModal from '@/components/admin/EditSessionModal'
 
 const SESSION_LABEL: Record<string, string> = { present: 'Có mặt', absent: 'Vắng', makeup: 'Học bù' }
 const STATUS_LABEL: Record<string, string> = { active: 'Đang học', paused: 'Tạm nghỉ', inactive: 'Nghỉ học' }
@@ -75,6 +76,13 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
     .map((p) => ({
       pkg: p,
       sessions: [...(p.sessions ?? [])].sort((a, b) => b.session_date.localeCompare(a.session_date)),
+    }))
+
+  // Danh sách gói để chọn khi sửa 1 buổi điểm danh (gán lại đúng gói)
+  const packageOptions = (packages ?? [])
+    .map((p: Package) => ({
+      id: p.id,
+      label: `${formatDate(p.start_date)}${p.status !== 'active' ? ` (${PACKAGE_STATUS_LABEL[p.status] ?? p.status})` : ''}`,
     }))
 
   const displayName = student.full_name
@@ -330,9 +338,18 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
                                   </span>
                                   <span className="text-gray-600 dark:text-gray-300">{formatDate(s.session_date)}</span>
                                 </div>
-                                <Badge variant={s.status === 'present' ? 'default' : s.status === 'absent' ? 'destructive' : 'secondary'}>
-                                  {SESSION_LABEL[s.status]}
-                                </Badge>
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                  <Badge variant={s.status === 'present' ? 'default' : s.status === 'absent' ? 'destructive' : 'secondary'}>
+                                    {SESSION_LABEL[s.status]}
+                                  </Badge>
+                                  <EditSessionModal
+                                    sessionId={s.id}
+                                    initialDate={s.session_date}
+                                    initialStatus={s.status}
+                                    initialPackageId={pkg.id}
+                                    packageOptions={packageOptions}
+                                  />
+                                </div>
                               </div>
                             )
                           })}
